@@ -1,11 +1,10 @@
 package benchmarks
 
 import (
-	"fmt"
 	"math"
 	"testing"
 
-	cd "github.com/cockroachdb/apd"
+	cd "github.com/cockroachdb/apd/v3"
 	gv "github.com/govalues/decimal"
 	ss "github.com/shopspring/decimal"
 )
@@ -13,31 +12,28 @@ import (
 func BenchmarkDecimal_Add(b *testing.B) {
 
 	b.Run("govalues/decimal", func(b *testing.B) {
-		x := gv.New(2, 0)
-		y := gv.New(3, 0)
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			x.Add(y)
+			x := gv.New(2, 0)
+			y := gv.New(3, 0)
+			_ = x.Add(y)
 		}
 	})
 
 	b.Run("shopspring/decimal", func(b *testing.B) {
-		x := ss.New(2, 0)
-		y := ss.New(3, 0)
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			x.Add(y)
+			x := ss.New(2, 0)
+			y := ss.New(3, 0)
+			_ = x.Add(y)
 		}
 	})
 
 	b.Run("cockroachdb/apd", func(b *testing.B) {
 		cd.BaseContext.Precision = 19
 		cd.BaseContext.Rounding = cd.RoundHalfEven
-		x := cd.New(2, 0)
-		y := cd.New(3, 0)
-		z := cd.New(0, 0)
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
+			x := cd.New(2, 0)
+			y := cd.New(3, 0)
+			z := cd.New(0, 0)
 			cd.BaseContext.Add(z, x, y)
 		}
 	})
@@ -46,32 +42,41 @@ func BenchmarkDecimal_Add(b *testing.B) {
 func BenchmarkDecimal_Mul(b *testing.B) {
 
 	b.Run("govalues/decimal", func(b *testing.B) {
-		x := gv.New(2, 0)
-		y := gv.New(3, 0)
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			x.Mul(y)
+			x := gv.New(2, 0)
+			y := gv.New(3, 0)
+			_ = x.Mul(y)
 		}
 	})
 
 	b.Run("shopspring/decimal", func(b *testing.B) {
-		x := ss.New(2, 0)
-		y := ss.New(3, 0)
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			x.Mul(y)
+			x := ss.New(2, 0)
+			y := ss.New(3, 0)
+			_ = x.Mul(y)
 		}
 	})
 
 	b.Run("cockroachdb/apd", func(b *testing.B) {
 		cd.BaseContext.Precision = 19
 		cd.BaseContext.Rounding = cd.RoundHalfEven
-		x := cd.New(2, 0)
-		y := cd.New(3, 0)
-		z := cd.New(0, 0)
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
+			x := cd.New(2, 0)
+			y := cd.New(3, 0)
+			z := cd.New(0, 0)
 			cd.BaseContext.Mul(z, x, y)
+		}
+	})
+}
+
+func BenchmarkDecimal_FMA(b *testing.B) {
+
+	b.Run("govalues/decimal", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			x := gv.New(2, 0)
+			y := gv.New(3, 0)
+			z := gv.New(4, 0)
+			_ = x.FMA(y, z)
 		}
 	})
 }
@@ -79,31 +84,29 @@ func BenchmarkDecimal_Mul(b *testing.B) {
 func BenchmarkDecimal_Pow(b *testing.B) {
 
 	b.Run("govalues/decimal", func(b *testing.B) {
-		x := gv.New(11, 1)
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			x.Pow(60)
+			x := gv.New(11, 1)
+			_ = x.Pow(60)
 		}
 	})
 
 	b.Run("shopspring/decimal", func(b *testing.B) {
-		x := ss.New(11, -1)
-		y := ss.New(60, 0)
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			x.Pow(y)
+			x := ss.New(11, -1)
+			y := ss.New(60, 0)
+			_ = x.Pow(y).RoundBank(19)
 		}
 	})
 
 	b.Run("cockroachdb/apd", func(b *testing.B) {
-		cd.BaseContext.Precision = 19
+		cd.BaseContext.Precision = 38
 		cd.BaseContext.Rounding = cd.RoundHalfEven
-		x := cd.New(11, -1)
-		y := cd.New(60, 0)
-		z := cd.New(0, 0)
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
+			x := cd.New(11, -1)
+			y := cd.New(60, 0)
+			z := cd.New(0, 0)
 			cd.BaseContext.Pow(z, x, y)
+			cd.BaseContext.Quantize(z, z, -19)
 		}
 	})
 }
@@ -111,32 +114,29 @@ func BenchmarkDecimal_Pow(b *testing.B) {
 func BenchmarkDecimal_QuoFinite(b *testing.B) {
 
 	b.Run("govalues/decimal", func(b *testing.B) {
-		x := gv.New(2, 0)
-		y := gv.New(4, 0)
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			x.Quo(y)
+			x := gv.New(2, 0)
+			y := gv.New(4, 0)
+			_ = x.Quo(y)
 		}
 	})
 
 	b.Run("shopspring/decimal", func(b *testing.B) {
 		ss.DivisionPrecision = 38
-		x := ss.New(2, 0)
-		y := ss.New(4, 0)
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			x.Div(y).RoundBank(19)
+			x := ss.New(2, 0)
+			y := ss.New(4, 0)
+			_ = x.Div(y)
 		}
 	})
 
 	b.Run("cockroachdb/apd", func(b *testing.B) {
 		cd.BaseContext.Precision = 38
 		cd.BaseContext.Rounding = cd.RoundHalfEven
-		x := cd.New(2, 0)
-		y := cd.New(4, 0)
-		z := cd.New(0, 0)
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
+			x := cd.New(2, 0)
+			y := cd.New(4, 0)
+			z := cd.New(0, 0)
 			cd.BaseContext.Quo(z, x, y)
 		}
 	})
@@ -145,33 +145,31 @@ func BenchmarkDecimal_QuoFinite(b *testing.B) {
 func BenchmarkDecimal_QuoInfinite(b *testing.B) {
 
 	b.Run("govalues/decimal", func(b *testing.B) {
-		x := gv.New(2, 0)
-		y := gv.New(3, 0)
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			x.Quo(y)
+			x := gv.New(2, 0)
+			y := gv.New(3, 0)
+			_ = x.Quo(y) // implicitly calculates 38 digits and rounds to 19 digits
 		}
 	})
 
 	b.Run("shopspring/decimal", func(b *testing.B) {
 		ss.DivisionPrecision = 38
-		x := ss.New(2, 0)
-		y := ss.New(3, 0)
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			x.Div(y).RoundBank(19)
+			x := ss.New(2, 0)
+			y := ss.New(3, 0)
+			_ = x.Div(y).RoundBank(19)
 		}
 	})
 
 	b.Run("cockroachdb/apd", func(b *testing.B) {
 		cd.BaseContext.Precision = 38
 		cd.BaseContext.Rounding = cd.RoundHalfEven
-		x := cd.New(2, 0)
-		y := cd.New(3, 0)
-		z := cd.New(0, 0)
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
+			x := cd.New(2, 0)
+			y := cd.New(3, 0)
+			z := cd.New(0, 0)
 			cd.BaseContext.Quo(z, x, y)
+			cd.BaseContext.Quantize(z, z, -19)
 		}
 	})
 }
@@ -183,27 +181,30 @@ func BenchmarkDecimal_DailyInterestCalculation(b *testing.B) {
 		balance := gv.New(1000000, 2)     // = 10000.00
 		yearlyRate := gv.New(1, 1)        // = 0.10
 		daysInYear := gv.New(365, 0)      // = 365
+		dailyRate := gv.New(0, 0)         // = 0
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			dailyRate := yearlyRate.Quo(daysInYear)
-			interest.Add(balance.Mul(dailyRate).Round(9))
+			dailyRate = yearlyRate.Quo(daysInYear)
+			_ = interest.Add(balance.Mul(dailyRate).Round(9))
 		}
 	})
 
 	b.Run("shopspring/decimal", func(b *testing.B) {
+		ss.DivisionPrecision = 38
 		interest := ss.New(1000000000, -9) // = 1.000000000
 		balance := ss.New(1000000, -2)     // = 10000.00
 		yearlyRate := ss.New(1, -1)        // = 0.10
 		daysInYear := ss.New(365, 0)       // = 365
+		dailyRate := ss.New(0, 0)          // = 0
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			dailyRate := yearlyRate.Div(daysInYear)
-			interest.Add(balance.Mul(dailyRate).RoundBank(9))
+			dailyRate = yearlyRate.Div(daysInYear).RoundBank(19)
+			_ = interest.Add(balance.Mul(dailyRate).RoundBank(9))
 		}
 	})
 
 	b.Run("cockroachdb/apd", func(b *testing.B) {
-		cd.BaseContext.Precision = 19
+		cd.BaseContext.Precision = 38
 		cd.BaseContext.Rounding = cd.RoundHalfEven
 		interest := cd.New(1000000000, -9) // = 1.000000000
 		balance := cd.New(1000000, -2)     // = 10000.00
@@ -214,6 +215,7 @@ func BenchmarkDecimal_DailyInterestCalculation(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			cd.BaseContext.Quo(dailyRate, yearlyRate, daysInYear)
+			cd.BaseContext.Quantize(dailyRate, dailyRate, -19)
 			cd.BaseContext.Mul(factor, balance, dailyRate)
 			cd.BaseContext.Quantize(factor, factor, -9)
 			cd.BaseContext.Add(factor, factor, interest)
@@ -277,36 +279,82 @@ var (
 	}
 )
 
-func quo_govalues(xcoef int64, xscale int, ycoef int64, yscale int) (num string, scale int, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("%v", r)
-		}
-	}()
+func round_shopspring(d ss.Decimal) (string, bool) {
+	// Check if number fits uint64 coefficient
+	prec := int32(d.NumDigits())
+	scale := int32(-d.Exponent())
+	if prec-scale > gv.MaxScale {
+		return "<overflow>", false
+	}
+	// Rounding
+	switch {
+	case scale >= prec && scale > gv.MaxScale: // no integer part
+		scale = gv.MaxScale
+		d = d.RoundBank(scale)
+	case prec > scale && prec > gv.MaxPrec: // there is an integer part
+		scale = scale - (prec - gv.MaxPrec)
+		d = d.RoundBank(scale)
+	}
+	// Check if rounding added 1 extra digit
+	prec = int32(d.NumDigits())
+	scale = int32(-d.Exponent())
+	if prec-scale > gv.MaxScale {
+		return "<overflow>", false
+	}
+	return d.String(), true
+}
+
+func round_cockroachdb(d *cd.Decimal) (string, bool) {
+	// Check if number fits uint64 coefficient
+	prec := int32(d.NumDigits())
+	scale := int32(-d.Exponent)
+	if prec-scale > gv.MaxPrec {
+		return "<overflow>", false
+	}
+	// Rounding
+	switch {
+	case scale >= prec && scale > gv.MaxScale: // no integer part
+		scale = gv.MaxScale
+		cd.BaseContext.Quantize(d, d, -scale)
+	case prec > scale && prec > gv.MaxPrec: // there is an integer part
+		scale = scale - (prec - gv.MaxPrec)
+		cd.BaseContext.Quantize(d, d, -scale)
+	}
+	// Negative Zeros
+	if d.IsZero() {
+		d.Abs(d)
+	}
+	// Trailing Zeros
+	d.Reduce(d)
+	// Check if rounding added 1 extra digit
+	prec = int32(d.NumDigits())
+	scale = int32(-d.Exponent)
+	if prec-scale > gv.MaxPrec {
+		return "<overflow>", false
+	}
+	return d.Text('f'), true
+}
+
+func quo_govalues(xcoef int64, xscale int, ycoef int64, yscale int) string {
 	x := gv.New(xcoef, xscale)
 	y := gv.New(ycoef, yscale)
 	z := x.Quo(y).Reduce()
-	return z.String(), z.Scale(), nil
-}
-
-func div_shopspring(xcoef int64, xscale int, ycoef int64, yscale int, zscale int) string {
-	x := ss.New(xcoef, int32(-xscale))
-	y := ss.New(ycoef, int32(-yscale))
-	z := x.Div(y).RoundBank(int32(zscale))
 	return z.String()
 }
 
-func quo_cockroachdb(xcoef int64, xscale int, ycoef int64, yscale int, zscale int) string {
+func div_shopspring(xcoef int64, xscale int, ycoef int64, yscale int) (string, bool) {
+	x := ss.New(xcoef, int32(-xscale))
+	y := ss.New(ycoef, int32(-yscale))
+	z := x.Div(y)
+	return round_shopspring(z)
+}
+
+func quo_cockroachdb(xcoef int64, xscale int, ycoef int64, yscale int) (string, bool) {
 	x := cd.New(xcoef, int32(-xscale))
 	y := cd.New(ycoef, int32(-yscale))
 	z := cd.New(0, 0)
 	cd.BaseContext.Quo(z, x, y)
-	cd.BaseContext.Quantize(z, z, int32(-zscale))
-	z.Reduce(z)
-	if z.IsZero() {
-		z.Abs(z)
-	}
-	return z.Text('f')
+	return round_cockroachdb(z)
 }
 
 func FuzzDecimal_Quo(f *testing.F) {
@@ -322,55 +370,61 @@ func FuzzDecimal_Quo(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, xcoef int64, xscale int, ycoef int64, yscale int) {
-		// GoValues
-		wantGV, scale, err := quo_govalues(xcoef, xscale, ycoef, yscale)
-		if err != nil { // Error is expected if integer part of a result has more than 19 digits
+		if xscale > gv.MaxScale || xscale < 0 {
 			t.Skip()
 			return
 		}
-		// ShopSpring
-		gotSS := div_shopspring(xcoef, xscale, ycoef, yscale, scale)
-		if wantGV != gotSS {
-			t.Errorf("div_shopspring(%v, %v, %v, %v, %v) = %v, want %v", xcoef, xscale, ycoef, yscale, scale, gotSS, wantGV)
+		if yscale > gv.MaxScale || yscale < 0 {
+			t.Skip()
+			return
+		}
+		if ycoef == 0 {
+			t.Skip()
+			return
 		}
 		// Cockroach DB
-		gotCD := quo_cockroachdb(xcoef, xscale, ycoef, yscale, scale)
+		gotCD, ok := quo_cockroachdb(xcoef, xscale, ycoef, yscale)
+		if !ok {
+			t.Skip()
+			return
+		}
+		// GoValues
+		wantGV := quo_govalues(xcoef, xscale, ycoef, yscale)
 		if wantGV != gotCD {
-			t.Errorf("quo_cockroachdb(%v, %v, %v, %v, %v) = %v, want %v", xcoef, xscale, ycoef, yscale, scale, gotCD, wantGV)
+			t.Errorf("quo_cockroachdb(%v, %v, %v, %v) = %v, want %v", xcoef, xscale, ycoef, yscale, gotCD, wantGV)
+		}
+		// ShopSpring
+		gotSS, ok := div_shopspring(xcoef, xscale, ycoef, yscale)
+		if !ok {
+			t.Skip()
+			return
+		}
+		if wantGV != gotSS {
+			t.Errorf("div_shopspring(%v, %v, %v, %v) = %v, want %v", xcoef, xscale, ycoef, yscale, gotSS, wantGV)
 		}
 	})
 }
 
-func mul_govalues(xcoef int64, xscale int, ycoef int64, yscale int) (num string, scale int, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("%v", r)
-		}
-	}()
-	x := gv.New(xcoef, xscale)
-	y := gv.New(ycoef, yscale)
-	z := x.Mul(y).Reduce()
-	return z.String(), z.Scale(), nil
-}
-
-func mul_shopspring(xcoef int64, xscale int, ycoef int64, yscale int, zscale int) string {
+func mul_shopspring(xcoef int64, xscale int, ycoef int64, yscale int) (string, bool) {
 	x := ss.New(xcoef, int32(-xscale))
 	y := ss.New(ycoef, int32(-yscale))
-	z := x.Mul(y).RoundBank(int32(zscale))
-	return z.String()
+	z := x.Mul(y)
+	return round_shopspring(z)
 }
 
-func mul_cockroachdb(xcoef int64, xscale int, ycoef int64, yscale int, zscale int) string {
+func mul_cockroachdb(xcoef int64, xscale int, ycoef int64, yscale int) (string, bool) {
 	x := cd.New(xcoef, int32(-xscale))
 	y := cd.New(ycoef, int32(-yscale))
 	z := cd.New(0, 0)
 	cd.BaseContext.Mul(z, x, y)
-	cd.BaseContext.Quantize(z, z, int32(-zscale))
-	z.Reduce(z)
-	if z.IsZero() {
-		z.Abs(z)
-	}
-	return z.Text('f')
+	return round_cockroachdb(z)
+}
+
+func mul_govalues(xcoef int64, xscale int, ycoef int64, yscale int) string {
+	x := gv.New(xcoef, xscale)
+	y := gv.New(ycoef, yscale)
+	z := x.Mul(y).Reduce()
+	return z.String()
 }
 
 func FuzzDecimal_Mul(f *testing.F) {
@@ -386,21 +440,37 @@ func FuzzDecimal_Mul(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, xcoef int64, xscale int, ycoef int64, yscale int) {
-		// GoValues
-		wantGV, scale, err := mul_govalues(xcoef, xscale, ycoef, yscale)
-		if err != nil { // Error is expected if integer part of a result has more than 19 digits
+		if xscale > gv.MaxScale || xscale < 0 {
 			t.Skip()
 			return
 		}
-		// ShopSpring
-		gotSS := mul_shopspring(xcoef, xscale, ycoef, yscale, scale)
-		if wantGV != gotSS {
-			t.Errorf("mul_shopspring(%v, %v, %v, %v, %v) = %v, want %v", xcoef, xscale, ycoef, yscale, scale, gotSS, wantGV)
+		if yscale > gv.MaxScale || yscale < 0 {
+			t.Skip()
+			return
 		}
 		// Cockroach DB
-		gotCD := mul_cockroachdb(xcoef, xscale, ycoef, yscale, scale)
+		gotCD, ok := mul_cockroachdb(xcoef, xscale, ycoef, yscale)
+		if !ok {
+			t.Skip()
+			return
+		}
+		// GoValues
+		wantGV := mul_govalues(xcoef, xscale, ycoef, yscale)
 		if wantGV != gotCD {
-			t.Errorf("mul_cockroachdb(%v, %v, %v, %v, %v) = %v, want %v", xcoef, xscale, ycoef, yscale, scale, gotCD, wantGV)
+			t.Errorf("mul_cockroachdb(%v, %v, %v, %v) = %v, want %v", xcoef, xscale, ycoef, yscale, gotCD, wantGV)
+		}
+		// ShopSpring
+		gotSS, ok := mul_shopspring(xcoef, xscale, ycoef, yscale)
+		if !ok {
+			t.Skip()
+			return
+		}
+		if wantGV != gotSS {
+			t.Errorf("mul_shopspring(%v, %v, %v, %v) = %v, want %v", xcoef, xscale, ycoef, yscale, gotSS, wantGV)
 		}
 	})
+}
+
+func Decimal_FMA(f *testing.F) {
+	f.Error("not implemented")
 }
