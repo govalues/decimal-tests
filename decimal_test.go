@@ -335,26 +335,26 @@ func round_cockroachdb(d *cd.Decimal) (string, bool) {
 	return d.Text('f'), true
 }
 
-func quo_govalues(xcoef int64, xscale int, ycoef int64, yscale int) string {
-	x := gv.New(xcoef, xscale)
-	y := gv.New(ycoef, yscale)
-	z := x.Quo(y).Reduce()
-	return z.String()
+func quo_govalues(dcoef int64, dscale int, ecoef int64, escale int) string {
+	d := gv.New(dcoef, dscale)
+	e := gv.New(ecoef, escale)
+	f := d.Quo(e).Reduce()
+	return f.String()
 }
 
-func div_shopspring(xcoef int64, xscale int, ycoef int64, yscale int) (string, bool) {
-	x := ss.New(xcoef, int32(-xscale))
-	y := ss.New(ycoef, int32(-yscale))
-	z := x.Div(y)
-	return round_shopspring(z)
+func div_shopspring(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
+	d := ss.New(dcoef, int32(-dscale))
+	e := ss.New(ecoef, int32(-escale))
+	f := d.Div(e)
+	return round_shopspring(f)
 }
 
-func quo_cockroachdb(xcoef int64, xscale int, ycoef int64, yscale int) (string, bool) {
-	x := cd.New(xcoef, int32(-xscale))
-	y := cd.New(ycoef, int32(-yscale))
-	z := cd.New(0, 0)
-	cd.BaseContext.Quo(z, x, y)
-	return round_cockroachdb(z)
+func quo_cockroachdb(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
+	d := cd.New(dcoef, int32(-dscale))
+	e := cd.New(ecoef, int32(-escale))
+	f := cd.New(0, 0)
+	cd.BaseContext.Quo(f, d, e)
+	return round_cockroachdb(f)
 }
 
 func FuzzDecimal_Quo(f *testing.F) {
@@ -363,68 +363,68 @@ func FuzzDecimal_Quo(f *testing.F) {
 	cd.BaseContext.Precision = 38
 	cd.BaseContext.Rounding = cd.RoundHalfEven
 
-	for _, x := range corpus {
-		for _, y := range corpus {
-			f.Add(x.coef, x.scale, y.coef, y.scale)
+	for _, d := range corpus {
+		for _, e := range corpus {
+			f.Add(d.coef, d.scale, e.coef, e.scale)
 		}
 	}
 
-	f.Fuzz(func(t *testing.T, xcoef int64, xscale int, ycoef int64, yscale int) {
-		if xscale > gv.MaxScale || xscale < 0 {
+	f.Fuzz(func(t *testing.T, dcoef int64, dscale int, ecoef int64, escale int) {
+		if dscale > gv.MaxScale || dscale < 0 {
 			t.Skip()
 			return
 		}
-		if yscale > gv.MaxScale || yscale < 0 {
+		if escale > gv.MaxScale || escale < 0 {
 			t.Skip()
 			return
 		}
-		if ycoef == 0 {
+		if ecoef == 0 {
 			t.Skip()
 			return
 		}
 		// Cockroach DB
-		gotCD, ok := quo_cockroachdb(xcoef, xscale, ycoef, yscale)
+		gotCD, ok := quo_cockroachdb(dcoef, dscale, ecoef, escale)
 		if !ok {
 			t.Skip()
 			return
 		}
 		// GoValues
-		wantGV := quo_govalues(xcoef, xscale, ycoef, yscale)
+		wantGV := quo_govalues(dcoef, dscale, ecoef, escale)
 		if wantGV != gotCD {
-			t.Errorf("quo_cockroachdb(%v, %v, %v, %v) = %v, want %v", xcoef, xscale, ycoef, yscale, gotCD, wantGV)
+			t.Errorf("quo_cockroachdb(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotCD, wantGV)
 		}
 		// ShopSpring
-		gotSS, ok := div_shopspring(xcoef, xscale, ycoef, yscale)
+		gotSS, ok := div_shopspring(dcoef, dscale, ecoef, escale)
 		if !ok {
 			t.Skip()
 			return
 		}
 		if wantGV != gotSS {
-			t.Errorf("div_shopspring(%v, %v, %v, %v) = %v, want %v", xcoef, xscale, ycoef, yscale, gotSS, wantGV)
+			t.Errorf("div_shopspring(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotSS, wantGV)
 		}
 	})
 }
 
-func mul_shopspring(xcoef int64, xscale int, ycoef int64, yscale int) (string, bool) {
-	x := ss.New(xcoef, int32(-xscale))
-	y := ss.New(ycoef, int32(-yscale))
-	z := x.Mul(y)
-	return round_shopspring(z)
+func mul_shopspring(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
+	d := ss.New(dcoef, int32(-dscale))
+	e := ss.New(ecoef, int32(-escale))
+	f := d.Mul(e)
+	return round_shopspring(f)
 }
 
-func mul_cockroachdb(xcoef int64, xscale int, ycoef int64, yscale int) (string, bool) {
-	x := cd.New(xcoef, int32(-xscale))
-	y := cd.New(ycoef, int32(-yscale))
-	z := cd.New(0, 0)
-	cd.BaseContext.Mul(z, x, y)
-	return round_cockroachdb(z)
+func mul_cockroachdb(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
+	d := cd.New(dcoef, int32(-dscale))
+	e := cd.New(ecoef, int32(-escale))
+	f := cd.New(0, 0)
+	cd.BaseContext.Mul(f, d, e)
+	return round_cockroachdb(f)
 }
 
-func mul_govalues(xcoef int64, xscale int, ycoef int64, yscale int) string {
-	x := gv.New(xcoef, xscale)
-	y := gv.New(ycoef, yscale)
-	z := x.Mul(y).Reduce()
-	return z.String()
+func mul_govalues(dcoef int64, dscale int, ecoef int64, escale int) string {
+	d := gv.New(dcoef, dscale)
+	e := gv.New(ecoef, escale)
+	f := d.Mul(e).Reduce()
+	return f.String()
 }
 
 func FuzzDecimal_Mul(f *testing.F) {
@@ -433,40 +433,40 @@ func FuzzDecimal_Mul(f *testing.F) {
 	cd.BaseContext.Precision = 38
 	cd.BaseContext.Rounding = cd.RoundHalfEven
 
-	for _, x := range corpus {
-		for _, y := range corpus {
-			f.Add(x.coef, x.scale, y.coef, y.scale)
+	for _, d := range corpus {
+		for _, e := range corpus {
+			f.Add(d.coef, d.scale, e.coef, e.scale)
 		}
 	}
 
-	f.Fuzz(func(t *testing.T, xcoef int64, xscale int, ycoef int64, yscale int) {
-		if xscale > gv.MaxScale || xscale < 0 {
+	f.Fuzz(func(t *testing.T, dcoef int64, dscale int, ecoef int64, escale int) {
+		if dscale > gv.MaxScale || dscale < 0 {
 			t.Skip()
 			return
 		}
-		if yscale > gv.MaxScale || yscale < 0 {
+		if escale > gv.MaxScale || escale < 0 {
 			t.Skip()
 			return
 		}
 		// Cockroach DB
-		gotCD, ok := mul_cockroachdb(xcoef, xscale, ycoef, yscale)
+		gotCD, ok := mul_cockroachdb(dcoef, dscale, ecoef, escale)
 		if !ok {
 			t.Skip()
 			return
 		}
 		// GoValues
-		wantGV := mul_govalues(xcoef, xscale, ycoef, yscale)
+		wantGV := mul_govalues(dcoef, dscale, ecoef, escale)
 		if wantGV != gotCD {
-			t.Errorf("mul_cockroachdb(%v, %v, %v, %v) = %v, want %v", xcoef, xscale, ycoef, yscale, gotCD, wantGV)
+			t.Errorf("mul_cockroachdb(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotCD, wantGV)
 		}
 		// ShopSpring
-		gotSS, ok := mul_shopspring(xcoef, xscale, ycoef, yscale)
+		gotSS, ok := mul_shopspring(dcoef, dscale, ecoef, escale)
 		if !ok {
 			t.Skip()
 			return
 		}
 		if wantGV != gotSS {
-			t.Errorf("mul_shopspring(%v, %v, %v, %v) = %v, want %v", xcoef, xscale, ycoef, yscale, gotSS, wantGV)
+			t.Errorf("mul_shopspring(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotSS, wantGV)
 		}
 	})
 }
