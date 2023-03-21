@@ -28,7 +28,8 @@ To run all benchmarks, simply run the following command:
 go test -count=10 -bench . github.com/govalues/benchmarks > results.txt
 ```
 
-To print a summary of the benchmark results, including statistics such as mean, standard deviation, and confidence intervals.
+To print a summary of the benchmark results, including statistics such as mean,
+standard deviation, and confidence intervals, execute the following command:
 
 ```bash
 benchstat -col /mod results.txt
