@@ -25,7 +25,7 @@ go get github.com/shopspring/decimal
 To run all benchmarks, simply run the following command:
 
 ```bash
-go test -count=10 -bench . github.com/govalues/benchmarks > results.txt
+go test -count=30 -timeout=60m -bench . github.com/govalues/benchmarks > results.txt
 ```
 
 To print a summary of the benchmark results, including statistics such as mean,

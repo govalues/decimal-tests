@@ -8,66 +8,6 @@ import (
 	ss "github.com/shopspring/decimal"
 )
 
-func BenchmarkParse(b *testing.B) {
-
-	str := "1234567890.123456789"
-
-	b.Run("mod=govalues", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			_, _ = gv.Parse(str)
-		}
-	})
-
-	b.Run("mod=cockroachdb", func(b *testing.B) {
-		d := cd.New(0, 0)
-		for i := 0; i < b.N; i++ {
-			d.SetString(str)
-		}
-	})
-
-	b.Run("mod=shopspring", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			_, _ = ss.NewFromString(str)
-		}
-	})
-}
-
-func BenchmarkDecimal_String(b *testing.B) {
-
-	str := "1234567890.123456789"
-
-	b.Run("mod=govalues", func(b *testing.B) {
-		d, err := gv.Parse(str)
-		if err != nil {
-			panic(err)
-		}
-		for i := 0; i < b.N; i++ {
-			_ = d.String()
-		}
-	})
-
-	b.Run("mod=cockroachdb", func(b *testing.B) {
-		d := cd.New(0, 0)
-		d, _, err := d.SetString(str)
-		if err != nil {
-			panic(err)
-		}
-		for i := 0; i < b.N; i++ {
-			_ = d.Text('f')
-		}
-	})
-
-	b.Run("mod=shopspring", func(b *testing.B) {
-		d, err := ss.NewFromString(str)
-		if err != nil {
-			panic(err)
-		}
-		for i := 0; i < b.N; i++ {
-			_ = d.String()
-		}
-	})
-}
-
 func BenchmarkDecimal_Add(b *testing.B) {
 
 	b.Run("mod=govalues", func(b *testing.B) {
@@ -124,18 +64,6 @@ func BenchmarkDecimal_Mul(b *testing.B) {
 			x := ss.New(2, 0)
 			y := ss.New(3, 0)
 			_ = x.Mul(y)
-		}
-	})
-}
-
-func BenchmarkDecimal_FMA(b *testing.B) {
-
-	b.Run("mod=govalues", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			x := gv.New(2, 0)
-			y := gv.New(3, 0)
-			z := gv.New(4, 0)
-			_ = x.FMA(y, z)
 		}
 	})
 }
@@ -231,6 +159,89 @@ func BenchmarkDecimal_Pow(b *testing.B) {
 			_ = x.Pow(y).RoundBank(19)
 		}
 	})
+}
+
+func BenchmarkParse(b *testing.B) {
+
+	tests := []string{
+		"123456789.1234567890",
+		"123.456",
+		"1",
+	}
+
+	for _, str := range tests {
+
+		b.Run(str, func(b *testing.B) {
+
+			b.Run("mod=govalues", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					_, _ = gv.Parse(str)
+				}
+			})
+
+			b.Run("mod=cockroachdb", func(b *testing.B) {
+				d := cd.New(0, 0)
+				for i := 0; i < b.N; i++ {
+					d.SetString(str)
+				}
+			})
+
+			b.Run("mod=shopspring", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					_, _ = ss.NewFromString(str)
+				}
+			})
+		})
+	}
+}
+
+func BenchmarkDecimal_String(b *testing.B) {
+
+	tests := []string{
+		"123456789.1234567890",
+		"123.456",
+		"1",
+	}
+
+	for _, str := range tests {
+
+		b.Run(str, func(b *testing.B) {
+
+			b.Run("mod=govalues", func(b *testing.B) {
+				d, err := gv.Parse(str)
+				if err != nil {
+					panic(err)
+				}
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					_ = d.String()
+				}
+			})
+
+			b.Run("mod=cockroachdb", func(b *testing.B) {
+				d := cd.New(0, 0)
+				d, _, err := d.SetString(str)
+				if err != nil {
+					panic(err)
+				}
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					_ = d.Text('f')
+				}
+			})
+
+			b.Run("mod=shopspring", func(b *testing.B) {
+				d, err := ss.NewFromString(str)
+				if err != nil {
+					panic(err)
+				}
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					_ = d.String()
+				}
+			})
+		})
+	}
 }
 
 func BenchmarkDecimal_DailyInterest(b *testing.B) {
