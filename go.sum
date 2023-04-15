@@ -1,7 +1,7 @@
 github.com/cockroachdb/apd/v3 v3.1.2 h1:DDFeYj70f6yWcWlfGNwZ7z6NSpkOZAKsse1VmBtf+zs=
 github.com/cockroachdb/apd/v3 v3.1.2/go.mod h1:klXJcjp+FffLTHlhIG69tezTDvdP065naDsHzKhYSqc=
-github.com/govalues/decimal v0.0.9 h1:TOz9Op3MArG4bqMj7SnlNv+mY8FA2GWIGs+HdBSZbcc=
-github.com/govalues/decimal v0.0.9/go.mod h1:NfqNdX/GQBotCdmXtzckjhq54itVCX1Git3psSgom8A=
+github.com/govalues/decimal v0.0.11 h1:74omorAEdzVVTWqCh+4Hu4NkJy6ddi4f791Tx43pt9w=
+github.com/govalues/decimal v0.0.11/go.mod h1:NfqNdX/GQBotCdmXtzckjhq54itVCX1Git3psSgom8A=
 github.com/lib/pq v1.10.7 h1:p7ZhMD+KsSRozJr34udlUrhboJwWAgCg34+/ZZNvZZw=
 github.com/shopspring/decimal v1.3.1 h1:2Usl1nmF/WZucqkFZhnfFYxxxu8LG21F6nPQBE5gKV8=
 github.com/shopspring/decimal v1.3.1/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=

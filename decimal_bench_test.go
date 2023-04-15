@@ -244,6 +244,55 @@ func BenchmarkDecimal_String(b *testing.B) {
 	}
 }
 
+func BenchmarkDecimal_Float64(b *testing.B) {
+
+	tests := []string{
+		"123456789.1234567890",
+		"123.456",
+		"1",
+	}
+
+	for _, str := range tests {
+
+		b.Run(str, func(b *testing.B) {
+
+			b.Run("mod=govalues", func(b *testing.B) {
+				d, err := gv.Parse(str)
+				if err != nil {
+					panic(err)
+				}
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					_, _ = d.Float64()
+				}
+			})
+
+			b.Run("mod=cockroachdb", func(b *testing.B) {
+				d := cd.New(0, 0)
+				d, _, err := d.SetString(str)
+				if err != nil {
+					panic(err)
+				}
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					_, _ = d.Float64()
+				}
+			})
+
+			b.Run("mod=shopspring", func(b *testing.B) {
+				d, err := ss.NewFromString(str)
+				if err != nil {
+					panic(err)
+				}
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					_, _ = d.Float64()
+				}
+			})
+		})
+	}
+}
+
 func BenchmarkDecimal_DailyInterest(b *testing.B) {
 
 	b.Run("mod=govalues", func(b *testing.B) {
