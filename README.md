@@ -15,9 +15,7 @@ Install the necessary dependencies:
 
 ```bash
 go install golang.org/x/perf/cmd/benchstat
-go get github.com/cockroachdb/apd/v3
-go get github.com/govalues/decimal
-go get github.com/shopspring/decimal
+go mod download
 ```
 
 ## Running Benchmarks
