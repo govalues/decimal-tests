@@ -252,3 +252,69 @@ func FuzzDecimal_Mul(f *testing.F) {
 		}
 	})
 }
+
+func add_shopspring(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
+	d := ss.New(dcoef, int32(-dscale))
+	e := ss.New(ecoef, int32(-escale))
+	f := d.Add(e)
+	return round_shopspring(f)
+}
+
+func add_cockroachdb(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
+	d := cd.New(dcoef, int32(-dscale))
+	e := cd.New(ecoef, int32(-escale))
+	f := cd.New(0, 0)
+	cd.BaseContext.Add(f, d, e)
+	return round_cockroachdb(f)
+}
+
+func add_govalues(dcoef int64, dscale int, ecoef int64, escale int) string {
+	d := gv.New(dcoef, dscale)
+	e := gv.New(ecoef, escale)
+	f := d.Add(e).Reduce()
+	return f.String()
+}
+
+func FuzzDecimal_Add(f *testing.F) {
+
+	ss.DivisionPrecision = 19
+	cd.BaseContext.Precision = 38
+	cd.BaseContext.Rounding = cd.RoundHalfEven
+
+	for _, d := range corpus {
+		for _, e := range corpus {
+			f.Add(d.coef, d.scale, e.coef, e.scale)
+		}
+	}
+
+	f.Fuzz(func(t *testing.T, dcoef int64, dscale int, ecoef int64, escale int) {
+		if dscale > gv.MaxScale || dscale < 0 {
+			t.Skip()
+			return
+		}
+		if escale > gv.MaxScale || escale < 0 {
+			t.Skip()
+			return
+		}
+		// Cockroach DB
+		gotCD, ok := add_cockroachdb(dcoef, dscale, ecoef, escale)
+		if !ok {
+			t.Skip()
+			return
+		}
+		// GoValues
+		wantGV := add_govalues(dcoef, dscale, ecoef, escale)
+		if wantGV != gotCD {
+			t.Errorf("add_cockroachdb(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotCD, wantGV)
+		}
+		// ShopSpring
+		gotSS, ok := add_shopspring(dcoef, dscale, ecoef, escale)
+		if !ok {
+			t.Skip()
+			return
+		}
+		if wantGV != gotSS {
+			t.Errorf("add_shopspring(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotSS, wantGV)
+		}
+	})
+}
