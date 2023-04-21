@@ -19,7 +19,7 @@ jobs:
       run: gofmt -s -w . && git diff --exit-code
       
     - name: Verify dependency consistency
-      run: go mod tidy && git diff --exit-code
+      run: go get -u -t && go mod tidy && git diff --exit-code
 
     - name: Run fuzzing for addition
       run: go test -fuzztime 30s -fuzz ^FuzzDecimal_Add$ github.com/govalues/benchmarks
