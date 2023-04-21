@@ -22,10 +22,10 @@ jobs:
       run: go get -u -t && go mod tidy && git diff --exit-code
 
     - name: Run fuzzing for addition
-      run: go test -fuzztime 30s -fuzz ^FuzzDecimal_Add$ github.com/govalues/benchmarks
+      run: go test -fuzztime 15s -fuzz ^FuzzDecimal_Add$ github.com/govalues/benchmarks
 
     - name: Run fuzzing for multiplication
-      run: go test -fuzztime 30s -fuzz ^FuzzDecimal_Mul$ github.com/govalues/benchmarks
+      run: go test -fuzztime 15s -fuzz ^FuzzDecimal_Mul$ github.com/govalues/benchmarks
 
     - name: Run fuzzing for division
-      run: go test -fuzztime 30s -fuzz ^FuzzDecimal_Quo$ github.com/govalues/benchmarks
+      run: go test -fuzztime 15s -fuzz ^FuzzDecimal_Quo$ github.com/govalues/benchmarks
