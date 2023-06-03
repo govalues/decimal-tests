@@ -9,64 +9,62 @@ import (
 	ss "github.com/shopspring/decimal"
 )
 
-var (
-	corpus = []struct {
-		scale int
-		coef  int64
-	}{
-		{0, math.MaxInt64},
-		{1, math.MaxInt64},
-		{2, math.MaxInt64},
-		{0, 5000000000000000000},
-		{0, 1000000000000000000},
-		{19, math.MaxInt64},
-		{0, 9},
-		{0, 7},
-		{0, 6},
-		{0, 3},
-		{0, 2},
-		{0, 1},
-		{18, 3000000000000000003},
-		{18, 3000000000000000000},
-		{18, 2000000000000000002},
-		{18, 2000000000000000000},
-		{18, 1000000000000000001},
-		{18, 1000000000000000000},
-		{19, 3},
-		{19, 2},
-		{19, 1},
-		{0, 0},
-		{19, 0},
-		{0, math.MinInt64},
-		{1, math.MinInt64},
-		{2, math.MinInt64},
-		{0, -5000000000000000000},
-		{0, -1000000000000000000},
-		{19, math.MinInt64},
-		{0, -9},
-		{0, -7},
-		{0, -6},
-		{0, -3},
-		{0, -2},
-		{0, -1},
-		{18, -3000000000000000003},
-		{18, -3000000000000000000},
-		{18, -2000000000000000002},
-		{18, -2000000000000000000},
-		{18, -1000000000000000001},
-		{18, -1000000000000000000},
-		{19, -3},
-		{19, -2},
-		{19, -1},
-	}
-)
+var corpus = []struct {
+	scale int
+	coef  int64
+}{
+	{0, math.MaxInt64},
+	{1, math.MaxInt64},
+	{2, math.MaxInt64},
+	{0, 5000000000000000000},
+	{0, 1000000000000000000},
+	{19, math.MaxInt64},
+	{0, 9},
+	{0, 7},
+	{0, 6},
+	{0, 3},
+	{0, 2},
+	{0, 1},
+	{18, 3000000000000000003},
+	{18, 3000000000000000000},
+	{18, 2000000000000000002},
+	{18, 2000000000000000000},
+	{18, 1000000000000000001},
+	{18, 1000000000000000000},
+	{19, 3},
+	{19, 2},
+	{19, 1},
+	{0, 0},
+	{19, 0},
+	{0, math.MinInt64},
+	{1, math.MinInt64},
+	{2, math.MinInt64},
+	{0, -5000000000000000000},
+	{0, -1000000000000000000},
+	{19, math.MinInt64},
+	{0, -9},
+	{0, -7},
+	{0, -6},
+	{0, -3},
+	{0, -2},
+	{0, -1},
+	{18, -3000000000000000003},
+	{18, -3000000000000000000},
+	{18, -2000000000000000002},
+	{18, -2000000000000000000},
+	{18, -1000000000000000001},
+	{18, -1000000000000000000},
+	{19, -3},
+	{19, -2},
+	{19, -1},
+}
 
 func round_shopspring(d ss.Decimal) (string, bool) {
 	// Check if number fits uint64 coefficient
 	prec := int32(d.NumDigits())
 	scale := int32(-d.Exponent())
 	if prec-scale > gv.MaxScale {
-		return "<overflow>", false
+		return "", false
 	}
 	// Rounding
 	switch {
@@ -81,7 +79,7 @@ func round_shopspring(d ss.Decimal) (string, bool) {
 	prec = int32(d.NumDigits())
 	scale = int32(-d.Exponent())
 	if prec-scale > gv.MaxScale {
-		return "<overflow>", false
+		return "", false
 	}
 	return d.String(), true
 }
@@ -91,7 +89,7 @@ func round_cockroachdb(d *cd.Decimal) (string, bool) {
 	prec := int32(d.NumDigits())
 	scale := int32(-d.Exponent)
 	if prec-scale > gv.MaxPrec {
-		return "<overflow>", false
+		return "", false
 	}
 	// Rounding
 	switch {
@@ -112,16 +110,25 @@ func round_cockroachdb(d *cd.Decimal) (string, bool) {
 	prec = int32(d.NumDigits())
 	scale = int32(-d.Exponent)
 	if prec-scale > gv.MaxPrec {
-		return "<overflow>", false
+		return "", false
 	}
 	return d.Text('f'), true
 }
 
-func quo_govalues(dcoef int64, dscale int, ecoef int64, escale int) string {
-	d := gv.New(dcoef, dscale)
-	e := gv.New(ecoef, escale)
-	f := d.Quo(e).Reduce()
-	return f.String()
+func quo_govalues(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
+	d, err := gv.New(dcoef, dscale)
+	if err != nil {
+		return "", err
+	}
+	e, err := gv.New(ecoef, escale)
+	if err != nil {
+		return "", err
+	}
+	f, err := d.Quo(e)
+	if err != nil {
+		return "", err
+	}
+	return f.Trim(0).String(), nil
 }
 
 func div_shopspring(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
@@ -140,7 +147,6 @@ func quo_cockroachdb(dcoef int64, dscale int, ecoef int64, escale int) (string, 
 }
 
 func FuzzDecimal_Quo(f *testing.F) {
-
 	ss.DivisionPrecision = 38
 	cd.BaseContext.Precision = 38
 	cd.BaseContext.Rounding = cd.RoundHalfEven
@@ -171,7 +177,11 @@ func FuzzDecimal_Quo(f *testing.F) {
 			return
 		}
 		// GoValues
-		wantGV := quo_govalues(dcoef, dscale, ecoef, escale)
+		wantGV, err := quo_govalues(dcoef, dscale, ecoef, escale)
+		if err != nil {
+			t.Errorf("quo_govalues(%v, %v, %v, %v) failed: %v", dcoef, dscale, ecoef, escale, err)
+			return
+		}
 		if wantGV != gotCD {
 			t.Errorf("quo_cockroachdb(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotCD, wantGV)
 		}
@@ -202,15 +212,23 @@ func mul_cockroachdb(dcoef int64, dscale int, ecoef int64, escale int) (string, 
 	return round_cockroachdb(f)
 }
 
-func mul_govalues(dcoef int64, dscale int, ecoef int64, escale int) string {
-	d := gv.New(dcoef, dscale)
-	e := gv.New(ecoef, escale)
-	f := d.Mul(e).Reduce()
-	return f.String()
+func mul_govalues(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
+	d, err := gv.New(dcoef, dscale)
+	if err != nil {
+		return "", err
+	}
+	e, err := gv.New(ecoef, escale)
+	if err != nil {
+		return "", err
+	}
+	f, err := d.Mul(e)
+	if err != nil {
+		return "", err
+	}
+	return f.Trim(0).String(), nil
 }
 
 func FuzzDecimal_Mul(f *testing.F) {
-
 	ss.DivisionPrecision = 19
 	cd.BaseContext.Precision = 38
 	cd.BaseContext.Rounding = cd.RoundHalfEven
@@ -237,7 +255,11 @@ func FuzzDecimal_Mul(f *testing.F) {
 			return
 		}
 		// GoValues
-		wantGV := mul_govalues(dcoef, dscale, ecoef, escale)
+		wantGV, err := mul_govalues(dcoef, dscale, ecoef, escale)
+		if err != nil {
+			t.Errorf("mul_govalues(%v, %v, %v, %v) failed: %v", dcoef, dscale, ecoef, escale, err)
+			return
+		}
 		if wantGV != gotCD {
 			t.Errorf("mul_cockroachdb(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotCD, wantGV)
 		}
@@ -268,15 +290,23 @@ func add_cockroachdb(dcoef int64, dscale int, ecoef int64, escale int) (string, 
 	return round_cockroachdb(f)
 }
 
-func add_govalues(dcoef int64, dscale int, ecoef int64, escale int) string {
-	d := gv.New(dcoef, dscale)
-	e := gv.New(ecoef, escale)
-	f := d.Add(e).Reduce()
-	return f.String()
+func add_govalues(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
+	d, err := gv.New(dcoef, dscale)
+	if err != nil {
+		return "", err
+	}
+	e, err := gv.New(ecoef, escale)
+	if err != nil {
+		return "", err
+	}
+	f, err := d.Add(e)
+	if err != nil {
+		return "", err
+	}
+	return f.Trim(0).String(), nil
 }
 
 func FuzzDecimal_Add(f *testing.F) {
-
 	ss.DivisionPrecision = 19
 	cd.BaseContext.Precision = 38
 	cd.BaseContext.Rounding = cd.RoundHalfEven
@@ -303,7 +333,11 @@ func FuzzDecimal_Add(f *testing.F) {
 			return
 		}
 		// GoValues
-		wantGV := add_govalues(dcoef, dscale, ecoef, escale)
+		wantGV, err := add_govalues(dcoef, dscale, ecoef, escale)
+		if err != nil {
+			t.Errorf("add_govalues(%v, %v, %v, %v) failed: %v", dcoef, dscale, ecoef, escale, err)
+			return
+		}
 		if wantGV != gotCD {
 			t.Errorf("add_cockroachdb(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotCD, wantGV)
 		}

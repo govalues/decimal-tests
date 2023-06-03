@@ -9,12 +9,11 @@ import (
 )
 
 func BenchmarkDecimal_Add(b *testing.B) {
-
 	b.Run("mod=govalues", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			x := gv.New(2, 0)
-			y := gv.New(3, 0)
-			_ = x.Add(y)
+			x := gv.MustNew(2, 0)
+			y := gv.MustNew(3, 0)
+			_, _ = x.Add(y)
 		}
 	})
 
@@ -39,12 +38,11 @@ func BenchmarkDecimal_Add(b *testing.B) {
 }
 
 func BenchmarkDecimal_Mul(b *testing.B) {
-
 	b.Run("mod=govalues", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			x := gv.New(2, 0)
-			y := gv.New(3, 0)
-			_ = x.Mul(y)
+			x := gv.MustNew(2, 0)
+			y := gv.MustNew(3, 0)
+			_, _ = x.Mul(y)
 		}
 	})
 
@@ -69,12 +67,11 @@ func BenchmarkDecimal_Mul(b *testing.B) {
 }
 
 func BenchmarkDecimal_QuoFinite(b *testing.B) {
-
 	b.Run("mod=govalues", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			x := gv.New(2, 0)
-			y := gv.New(4, 0)
-			_ = x.Quo(y)
+			x := gv.MustNew(2, 0)
+			y := gv.MustNew(4, 0)
+			_, _ = x.Quo(y)
 		}
 	})
 
@@ -100,12 +97,11 @@ func BenchmarkDecimal_QuoFinite(b *testing.B) {
 }
 
 func BenchmarkDecimal_QuoInfinite(b *testing.B) {
-
 	b.Run("mod=govalues", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			x := gv.New(2, 0)
-			y := gv.New(3, 0)
-			_ = x.Quo(y) // implicitly calculates 38 digits and rounds to 19 digits
+			x := gv.MustNew(2, 0)
+			y := gv.MustNew(3, 0)
+			_, _ = x.Quo(y) // implicitly calculates 38 digits and rounds to 19 digits
 		}
 	})
 
@@ -132,11 +128,10 @@ func BenchmarkDecimal_QuoInfinite(b *testing.B) {
 }
 
 func BenchmarkDecimal_Pow(b *testing.B) {
-
 	b.Run("mod=govalues", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			x := gv.New(11, 1)
-			_ = x.Pow(60)
+			x := gv.MustNew(11, 1)
+			_, _ = x.Pow(60)
 		}
 	})
 
@@ -162,7 +157,6 @@ func BenchmarkDecimal_Pow(b *testing.B) {
 }
 
 func BenchmarkParse(b *testing.B) {
-
 	tests := []string{
 		"123456789.1234567890",
 		"123.456",
@@ -170,9 +164,7 @@ func BenchmarkParse(b *testing.B) {
 	}
 
 	for _, str := range tests {
-
 		b.Run(str, func(b *testing.B) {
-
 			b.Run("mod=govalues", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					_, _ = gv.Parse(str)
@@ -196,7 +188,6 @@ func BenchmarkParse(b *testing.B) {
 }
 
 func BenchmarkDecimal_String(b *testing.B) {
-
 	tests := []string{
 		"123456789.1234567890",
 		"123.456",
@@ -204,9 +195,7 @@ func BenchmarkDecimal_String(b *testing.B) {
 	}
 
 	for _, str := range tests {
-
 		b.Run(str, func(b *testing.B) {
-
 			b.Run("mod=govalues", func(b *testing.B) {
 				d, err := gv.Parse(str)
 				if err != nil {
@@ -244,67 +233,26 @@ func BenchmarkDecimal_String(b *testing.B) {
 	}
 }
 
-func BenchmarkDecimal_Float64(b *testing.B) {
-
-	tests := []string{
-		"123456789.1234567890",
-		"123.456",
-		"1",
-	}
-
-	for _, str := range tests {
-
-		b.Run(str, func(b *testing.B) {
-
-			b.Run("mod=govalues", func(b *testing.B) {
-				d, err := gv.Parse(str)
-				if err != nil {
-					panic(err)
-				}
-				b.ResetTimer()
-				for i := 0; i < b.N; i++ {
-					_, _ = d.Float64()
-				}
-			})
-
-			b.Run("mod=cockroachdb", func(b *testing.B) {
-				d := cd.New(0, 0)
-				d, _, err := d.SetString(str)
-				if err != nil {
-					panic(err)
-				}
-				b.ResetTimer()
-				for i := 0; i < b.N; i++ {
-					_, _ = d.Float64()
-				}
-			})
-
-			b.Run("mod=shopspring", func(b *testing.B) {
-				d, err := ss.NewFromString(str)
-				if err != nil {
-					panic(err)
-				}
-				b.ResetTimer()
-				for i := 0; i < b.N; i++ {
-					_, _ = d.Float64()
-				}
-			})
-		})
-	}
-}
-
 func BenchmarkDecimal_DailyInterest(b *testing.B) {
-
 	b.Run("mod=govalues", func(b *testing.B) {
-		interest := gv.New(1000000000, 9) // = 1.000000000
-		balance := gv.New(1000000, 2)     // = 10000.00
-		yearlyRate := gv.New(1, 1)        // = 0.10
-		daysInYear := gv.New(365, 0)      // = 365
-		dailyRate := gv.New(0, 0)         // = 0
+		var err error
+		interest := gv.MustNew(1000000000, 9) // = 1.000000000
+		balance := gv.MustNew(1000000, 2)     // = 10000.00
+		yearlyRate := gv.MustNew(1, 1)        // = 0.10
+		daysInYear := gv.MustNew(365, 0)      // = 365
+		dailyRate := gv.MustNew(0, 0)         // = 0
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			dailyRate = yearlyRate.Quo(daysInYear)
-			_ = interest.Add(balance.Mul(dailyRate).Round(9))
+			dailyRate, err = yearlyRate.Quo(daysInYear)
+			if err != nil {
+				b.Fatal(err)
+			}
+			factor, err := balance.Mul(dailyRate)
+			if err != nil {
+				b.Fatal(err)
+			}
+			factor = factor.Round(9)
+			_, _ = interest.Add(factor)
 		}
 	})
 
