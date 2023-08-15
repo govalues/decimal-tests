@@ -9,6 +9,11 @@ import (
 	ss "github.com/shopspring/decimal"
 )
 
+var (
+	resultString  string
+	resultFloat64 float64
+)
+
 func BenchmarkDecimal_Add(b *testing.B) {
 	b.Run("mod=govalues", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
@@ -188,10 +193,6 @@ func BenchmarkParse(b *testing.B) {
 	}
 }
 
-// Compiler optimizes out Decimal.Text calls, 
-// so we use a global variable to prevent that.
-var sink string
-
 func BenchmarkDecimal_String(b *testing.B) {
 	tests := []string{
 		"123456789.1234567890",
@@ -208,7 +209,7 @@ func BenchmarkDecimal_String(b *testing.B) {
 				}
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					sink = d.String()
+					resultString = d.String()
 				}
 			})
 
@@ -220,7 +221,7 @@ func BenchmarkDecimal_String(b *testing.B) {
 				}
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					sink = d.Text('f')
+					resultString = d.Text('f')
 				}
 			})
 
@@ -231,7 +232,7 @@ func BenchmarkDecimal_String(b *testing.B) {
 				}
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					sink = d.String()
+					resultString = d.String()
 				}
 			})
 		})
@@ -286,7 +287,7 @@ func BenchmarkDecimal_Float64(b *testing.B) {
 				}
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					_, _ = d.Float64()
+					resultFloat64, _ = d.Float64()
 				}
 			})
 
@@ -298,7 +299,7 @@ func BenchmarkDecimal_Float64(b *testing.B) {
 				}
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					_, _ = d.Float64()
+					resultFloat64, _ = d.Float64()
 				}
 			})
 
@@ -309,7 +310,7 @@ func BenchmarkDecimal_Float64(b *testing.B) {
 				}
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					_, _ = d.Float64()
+					resultFloat64, _ = d.Float64()
 				}
 			})
 		})
