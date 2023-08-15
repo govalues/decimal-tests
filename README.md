@@ -8,7 +8,7 @@ Additionally, the results of [govalues/decimal] are compared to [cockroachdb/apd
 Clone the repository:
 
 ```bash
-git clone https://github.com/govalues/decimal-benchmarks.git
+git clone https://github.com/govalues/benchmarks.git
 ```
 
 Install the necessary dependencies:
@@ -34,5 +34,5 @@ benchstat -col /mod results.txt
 ```
 
 [govalues/decimal]: https://github.com/govalues/decimal
-[shopspring/decimal]: https://github.com/govalues/decimal
+[shopspring/decimal]: https://github.com/shopspring/decimal
 [cockroachdb/apd]: https://github.com/cockroachdb/apd

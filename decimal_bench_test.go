@@ -187,6 +187,10 @@ func BenchmarkParse(b *testing.B) {
 	}
 }
 
+// Compiler optimizes out Decimal.Text calls, 
+// so we use a global variable to prevent that.
+var sink string
+
 func BenchmarkDecimal_String(b *testing.B) {
 	tests := []string{
 		"123456789.1234567890",
@@ -203,7 +207,7 @@ func BenchmarkDecimal_String(b *testing.B) {
 				}
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					_ = d.String()
+					sink = d.String()
 				}
 			})
 
@@ -215,7 +219,7 @@ func BenchmarkDecimal_String(b *testing.B) {
 				}
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					_ = d.Text('f')
+					sink = d.Text('f')
 				}
 			})
 
@@ -226,7 +230,7 @@ func BenchmarkDecimal_String(b *testing.B) {
 				}
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					_ = d.String()
+					sink = d.String()
 				}
 			})
 		})
