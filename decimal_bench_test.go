@@ -247,8 +247,8 @@ func BenchmarkNewFromFloat64(b *testing.B) {
 	}
 
 	for _, f := range tests {
-		str := strconv.FormatFloat(f, 'f', -1, 64)
-		b.Run(str, func(b *testing.B) {
+		name := strconv.FormatFloat(f, 'f', -1, 64)
+		b.Run(name, func(b *testing.B) {
 			b.Run("mod=govalues", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					_, _ = gv.NewFromFloat64(f)
@@ -278,10 +278,10 @@ func BenchmarkDecimal_Float64(b *testing.B) {
 		"1",
 	}
 
-	for _, str := range tests {
-		b.Run(str, func(b *testing.B) {
+	for _, s := range tests {
+		b.Run(s, func(b *testing.B) {
 			b.Run("mod=govalues", func(b *testing.B) {
-				d, err := gv.Parse(str)
+				d, err := gv.Parse(s)
 				if err != nil {
 					panic(err)
 				}
@@ -293,7 +293,7 @@ func BenchmarkDecimal_Float64(b *testing.B) {
 
 			b.Run("mod=cockroachdb", func(b *testing.B) {
 				d := cd.New(0, 0)
-				d, _, err := d.SetString(str)
+				d, _, err := d.SetString(s)
 				if err != nil {
 					panic(err)
 				}
@@ -304,7 +304,7 @@ func BenchmarkDecimal_Float64(b *testing.B) {
 			})
 
 			b.Run("mod=shopspring", func(b *testing.B) {
-				d, err := ss.NewFromString(str)
+				d, err := ss.NewFromString(s)
 				if err != nil {
 					panic(err)
 				}
