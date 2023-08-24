@@ -1,7 +1,6 @@
 package benchmarks
 
 import (
-	"strconv"
 	"testing"
 
 	cd "github.com/cockroachdb/apd/v3"
@@ -134,32 +133,46 @@ func BenchmarkDecimal_QuoInfinite(b *testing.B) {
 }
 
 func BenchmarkDecimal_Pow(b *testing.B) {
-	b.Run("mod=govalues", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			x := gv.MustNew(11, 1)
-			_, _ = x.Pow(60)
-		}
-	})
+	tests := map[string]struct {
+		coef  int64
+		scale int32
+		power int64
+	}{
+		"1.001^6000": {1001, 3, 6000},
+		"1.01^600":   {101, 2, 600},
+		"1.1^60":     {11, 1, 60},
+	}
 
-	b.Run("mod=cockroachdb", func(b *testing.B) {
-		cd.BaseContext.Precision = 38
-		cd.BaseContext.Rounding = cd.RoundHalfEven
-		for i := 0; i < b.N; i++ {
-			x := cd.New(11, -1)
-			y := cd.New(60, 0)
-			z := cd.New(0, 0)
-			cd.BaseContext.Pow(z, x, y)
-			cd.BaseContext.Quantize(z, z, -19)
-		}
-	})
+	for name, tt := range tests {
+		b.Run(name, func(b *testing.B) {
+			b.Run("mod=govalues", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					x := gv.MustNew(tt.coef, int(tt.scale))
+					_, _ = x.Pow(int(tt.power))
+				}
+			})
 
-	b.Run("mod=shopspring", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			x := ss.New(11, -1)
-			y := ss.New(60, 0)
-			_ = x.Pow(y).RoundBank(19)
-		}
-	})
+			b.Run("mod=cockroachdb", func(b *testing.B) {
+				cd.BaseContext.Precision = 38
+				cd.BaseContext.Rounding = cd.RoundHalfEven
+				for i := 0; i < b.N; i++ {
+					x := cd.New(tt.coef, -tt.scale)
+					y := cd.New(tt.power, 0)
+					z := cd.New(0, 0)
+					cd.BaseContext.Pow(z, x, y)
+					cd.BaseContext.Quantize(z, z, -19)
+				}
+			})
+
+			b.Run("mod=shopspring", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					x := ss.New(tt.coef, -tt.scale)
+					y := ss.New(tt.power, 0)
+					_ = x.Pow(y).RoundBank(19)
+				}
+			})
+		})
+	}
 }
 
 func BenchmarkParse(b *testing.B) {
@@ -169,24 +182,24 @@ func BenchmarkParse(b *testing.B) {
 		"1",
 	}
 
-	for _, str := range tests {
-		b.Run(str, func(b *testing.B) {
+	for _, s := range tests {
+		b.Run(s, func(b *testing.B) {
 			b.Run("mod=govalues", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
-					_, _ = gv.Parse(str)
+					_, _ = gv.Parse(s)
 				}
 			})
 
 			b.Run("mod=cockroachdb", func(b *testing.B) {
 				d := cd.New(0, 0)
 				for i := 0; i < b.N; i++ {
-					d.SetString(str)
+					d.SetString(s)
 				}
 			})
 
 			b.Run("mod=shopspring", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
-					_, _ = ss.NewFromString(str)
+					_, _ = ss.NewFromString(s)
 				}
 			})
 		})
@@ -200,10 +213,10 @@ func BenchmarkDecimal_String(b *testing.B) {
 		"1",
 	}
 
-	for _, str := range tests {
-		b.Run(str, func(b *testing.B) {
+	for _, s := range tests {
+		b.Run(s, func(b *testing.B) {
 			b.Run("mod=govalues", func(b *testing.B) {
-				d, err := gv.Parse(str)
+				d, err := gv.Parse(s)
 				if err != nil {
 					panic(err)
 				}
@@ -215,7 +228,7 @@ func BenchmarkDecimal_String(b *testing.B) {
 
 			b.Run("mod=cockroachdb", func(b *testing.B) {
 				d := cd.New(0, 0)
-				d, _, err := d.SetString(str)
+				d, _, err := d.SetString(s)
 				if err != nil {
 					panic(err)
 				}
@@ -226,7 +239,7 @@ func BenchmarkDecimal_String(b *testing.B) {
 			})
 
 			b.Run("mod=shopspring", func(b *testing.B) {
-				d, err := ss.NewFromString(str)
+				d, err := ss.NewFromString(s)
 				if err != nil {
 					panic(err)
 				}
@@ -240,14 +253,13 @@ func BenchmarkDecimal_String(b *testing.B) {
 }
 
 func BenchmarkNewFromFloat64(b *testing.B) {
-	tests := []float64{
-		123456789.12345678,
-		123.456,
-		1,
+	tests := map[string]float64{
+		"123456789.12345678": 123456789.12345678,
+		"123.456":            123.456,
+		"1":                  1,
 	}
 
-	for _, f := range tests {
-		name := strconv.FormatFloat(f, 'f', -1, 64)
+	for name, f := range tests {
 		b.Run(name, func(b *testing.B) {
 			b.Run("mod=govalues", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
