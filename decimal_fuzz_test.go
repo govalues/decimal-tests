@@ -346,3 +346,102 @@ func FuzzDecimalAdd(f *testing.F) {
 		}
 	})
 }
+
+func powGovalues(dcoef int64, dscale int, power int) (string, bool) {
+	d, err := gv.New(dcoef, dscale)
+	if err != nil {
+		return "", false
+	}
+	f, err := d.Pow(power)
+	if err != nil {
+		return "", false
+	}
+	return f.Trim(0).String(), true
+}
+
+func powCockroachdb(dcoef int64, dscale int, power int) (string, error) {
+	if dcoef == 0 && power == 0 {
+		return "1", nil
+	}
+	d := cd.New(dcoef, int32(-dscale))
+	e := cd.New(int64(power), 0)
+	f := cd.New(0, 0)
+	_, err := cd.BaseContext.Pow(f, d, e)
+	if err != nil {
+		return "", err
+	}
+	return roundCockroachdb(f)
+}
+
+func powShopspring(dcoef int64, dscale int, power int) (string, error) {
+	d := ss.New(dcoef, int32(-dscale))
+	e := ss.New(int64(power), 0)
+	f := d.Pow(e)
+	return roundShopspring(f)
+}
+
+func FuzzDecimalPow(f *testing.F) {
+	ss.DivisionPrecision = 100
+	cd.BaseContext.Precision = 100
+	cd.BaseContext.Rounding = cd.RoundHalfEven
+
+	for _, d := range corpus {
+		for p := -10; p <= 10; p++ {
+			f.Add(d.coef, d.scale, p)
+		}
+	}
+
+	f.Fuzz(func(t *testing.T, dcoef int64, dscale int, power int) {
+		// GoValues
+		gotGV, ok := powGovalues(dcoef, dscale, power)
+		if !ok {
+			t.Skip()
+			return
+		}
+		// Cockroach Db
+		wantCD, err := powCockroachdb(dcoef, dscale, power)
+		if err != nil {
+			t.Errorf("powCockroachdb(%v, %v, %v) failed: %v", dcoef, dscale, power, err)
+			return
+		}
+		if c, err := cmpULP(gotGV, wantCD); err != nil {
+			t.Errorf("cmpULP(%v, %v) failed: %v", gotGV, wantCD, err)
+			return
+		} else if c != 0 {
+			t.Errorf("powGovalues(%v, %v, %v) = %v, want %v", dcoef, dscale, power, gotGV, wantCD)
+			return
+		}
+		// ShopSpring
+		wantSS, err := powShopspring(dcoef, dscale, power)
+		if err != nil {
+			t.Errorf("powShopspring(%v, %v, %v) failed: %v", dcoef, dscale, power, err)
+			return
+		}
+		if c, err := cmpULP(gotGV, wantSS); err != nil {
+			t.Errorf("cmpULP(%v, %v) failed: %v", gotGV, wantSS, err)
+		} else if c != 0 {
+			t.Errorf("powGovalues(%v, %v, %v) = %v, want %v", dcoef, dscale, power, gotGV, wantSS)
+		}
+	})
+}
+
+// cmpULP compares decimals and returns 0 if they are within 1 ULP.
+func cmpULP(s, t string) (int, error) {
+	d, err := gv.Parse(s)
+	if err != nil {
+		return 0, err
+	}
+	e, err := gv.Parse(t)
+	if err != nil {
+		return 0, err
+	}
+	dist, err := d.SubAbs(e)
+	if err != nil {
+		return 0, err
+	}
+	ulp := d.ULP().Min(e.ULP())
+	if dist.Cmp(ulp) <= 0 {
+		return 0, nil
+	}
+	return d.Cmp(e), nil
+}

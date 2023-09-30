@@ -32,3 +32,6 @@ jobs:
 
     - name: Run fuzzing for division
       run: go test -fuzztime 20s -fuzz ^FuzzDecimalQuo$ github.com/govalues/benchmarks
+
+    - name: Run fuzzing for power
+      run: go test -fuzztime 40s -fuzz ^FuzzDecimalPow$ github.com/govalues/benchmarks
