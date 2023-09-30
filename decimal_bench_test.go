@@ -312,7 +312,10 @@ func BenchmarkDecimal_Float64(b *testing.B) {
 				}
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					resultFloat64, _ = d.Float64()
+					resultFloat64, err = d.Float64()
+				}
+				if err != nil {
+					panic(err)
 				}
 			})
 

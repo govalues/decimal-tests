@@ -1,6 +1,7 @@
 package benchmarks
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
@@ -59,12 +60,12 @@ var corpus = []struct {
 	{19, -1},
 }
 
-func roundShopspring(d ss.Decimal) (string, bool) {
+func roundShopspring(d ss.Decimal) (string, error) {
 	// Check if number fits uint64 coefficient
 	prec := int32(d.NumDigits())
 	scale := int32(-d.Exponent())
 	if prec-scale > gv.MaxScale {
-		return "", false
+		return "", fmt.Errorf("overflow (prec=%v, scale=%v)", prec, scale)
 	}
 	// Rounding
 	switch {
@@ -79,17 +80,19 @@ func roundShopspring(d ss.Decimal) (string, bool) {
 	prec = int32(d.NumDigits())
 	scale = int32(-d.Exponent())
 	if prec-scale > gv.MaxScale {
-		return "", false
+		return "", fmt.Errorf("overflow (prec=%v, scale=%v)", prec, scale)
 	}
-	return d.String(), true
+	return d.String(), nil
 }
 
-func roundCockroachdb(d *cd.Decimal) (string, bool) {
+func roundCockroachdb(d *cd.Decimal) (string, error) {
+	// Trailing Zeros
+	d.Reduce(d)
 	// Check if number fits uint64 coefficient
 	prec := int32(d.NumDigits())
 	scale := int32(-d.Exponent)
 	if prec-scale > gv.MaxPrec {
-		return "", false
+		return "", fmt.Errorf("overflow (prec=%v, scale=%v)", prec, scale)
 	}
 	// Rounding
 	switch {
@@ -97,67 +100,67 @@ func roundCockroachdb(d *cd.Decimal) (string, bool) {
 		scale = gv.MaxScale
 		_, err := cd.BaseContext.Quantize(d, d, -scale)
 		if err != nil {
-			return "", false
+			return "", err
 		}
 	case prec > scale && prec > gv.MaxPrec: // there is an integer part
 		scale = scale - (prec - gv.MaxPrec)
 		_, err := cd.BaseContext.Quantize(d, d, -scale)
 		if err != nil {
-			return "", false
+			return "", err
 		}
 	}
-	// Negative Zeros
-	if d.IsZero() {
-		d.Abs(d)
-	}
-	// Trailing Zeros
-	d.Reduce(d)
 	// Check if rounding added 1 extra digit
 	prec = int32(d.NumDigits())
 	scale = int32(-d.Exponent)
 	if prec-scale > gv.MaxPrec {
-		return "", false
+		return "", fmt.Errorf("overflow (prec=%v, scale=%v)", prec, scale)
 	}
-	return d.Text('f'), true
+	// Trailing Zeros
+	d.Reduce(d)
+	// Negative Zeros
+	if d.IsZero() {
+		d.Abs(d)
+	}
+	return d.Text('f'), nil
 }
 
-func quoGovalues(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
+func quoGovalues(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
 	d, err := gv.New(dcoef, dscale)
 	if err != nil {
-		return "", err
+		return "", false
 	}
 	e, err := gv.New(ecoef, escale)
 	if err != nil {
-		return "", err
+		return "", false
 	}
 	f, err := d.Quo(e)
 	if err != nil {
-		return "", err
+		return "", false
 	}
-	return f.Trim(0).String(), nil
+	return f.Trim(0).String(), true
 }
 
-func divShopspring(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
+func divShopspring(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
 	d := ss.New(dcoef, int32(-dscale))
 	e := ss.New(ecoef, int32(-escale))
 	f := d.Div(e)
 	return roundShopspring(f)
 }
 
-func quoCockroachdb(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
+func quoCockroachdb(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
 	d := cd.New(dcoef, int32(-dscale))
 	e := cd.New(ecoef, int32(-escale))
 	f := cd.New(0, 0)
 	_, err := cd.BaseContext.Quo(f, d, e)
 	if err != nil {
-		return "", false
+		return "", err
 	}
 	return roundCockroachdb(f)
 }
 
 func FuzzDecimalQuo(f *testing.F) {
-	ss.DivisionPrecision = 38
-	cd.BaseContext.Precision = 38
+	ss.DivisionPrecision = 100
+	cd.BaseContext.Precision = 100
 	cd.BaseContext.Rounding = cd.RoundHalfEven
 
 	for _, d := range corpus {
@@ -167,82 +170,72 @@ func FuzzDecimalQuo(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, dcoef int64, dscale int, ecoef int64, escale int) {
-		if dscale > gv.MaxScale || dscale < 0 {
-			t.Skip()
-			return
-		}
-		if escale > gv.MaxScale || escale < 0 {
-			t.Skip()
-			return
-		}
-		if ecoef == 0 {
+		// GoValues
+		gotGV, ok := quoGovalues(dcoef, dscale, ecoef, escale)
+		if !ok {
 			t.Skip()
 			return
 		}
 		// Cockroach DB
-		gotCD, ok := quoCockroachdb(dcoef, dscale, ecoef, escale)
-		if !ok {
-			t.Skip()
-			return
-		}
-		// GoValues
-		wantGV, err := quoGovalues(dcoef, dscale, ecoef, escale)
+		wantCD, err := quoCockroachdb(dcoef, dscale, ecoef, escale)
 		if err != nil {
-			t.Errorf("quo_govalues(%v, %v, %v, %v) failed: %v", dcoef, dscale, ecoef, escale, err)
+			t.Errorf("quoCockroachdb(%v, %v, %v, %v) failed: %v", dcoef, dscale, ecoef, escale, err)
 			return
 		}
-		if wantGV != gotCD {
-			t.Errorf("quo_cockroachdb(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotCD, wantGV)
+		if gotGV != wantCD {
+			t.Errorf("quoGovalues(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotGV, wantCD)
+			return
 		}
 		// ShopSpring
-		gotSS, ok := divShopspring(dcoef, dscale, ecoef, escale)
-		if !ok {
-			t.Skip()
+		wantSS, err := divShopspring(dcoef, dscale, ecoef, escale)
+		if err != nil {
+			t.Errorf("divShopspring(%v, %v, %v, %v) failed: %v", dcoef, dscale, ecoef, escale, err)
 			return
 		}
-		if wantGV != gotSS {
-			t.Errorf("div_shopspring(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotSS, wantGV)
+		if gotGV != wantSS {
+			t.Errorf("quoGovalues(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotGV, wantSS)
+			return
 		}
 	})
 }
 
-func mulShopspring(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
+func mulShopspring(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
 	d := ss.New(dcoef, int32(-dscale))
 	e := ss.New(ecoef, int32(-escale))
 	f := d.Mul(e)
 	return roundShopspring(f)
 }
 
-func mulCockroachdb(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
+func mulCockroachdb(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
 	d := cd.New(dcoef, int32(-dscale))
 	e := cd.New(ecoef, int32(-escale))
 	f := cd.New(0, 0)
 	_, err := cd.BaseContext.Mul(f, d, e)
 	if err != nil {
-		return "", false
+		return "", err
 	}
 	return roundCockroachdb(f)
 }
 
-func mulGovalues(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
+func mulGovalues(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
 	d, err := gv.New(dcoef, dscale)
 	if err != nil {
-		return "", err
+		return "", false
 	}
 	e, err := gv.New(ecoef, escale)
 	if err != nil {
-		return "", err
+		return "", false
 	}
 	f, err := d.Mul(e)
 	if err != nil {
-		return "", err
+		return "", false
 	}
-	return f.Trim(0).String(), nil
+	return f.Trim(0).String(), true
 }
 
 func FuzzDecimalMul(f *testing.F) {
-	ss.DivisionPrecision = 19
-	cd.BaseContext.Precision = 38
+	ss.DivisionPrecision = 100
+	cd.BaseContext.Precision = 100
 	cd.BaseContext.Rounding = cd.RoundHalfEven
 
 	for _, d := range corpus {
@@ -252,78 +245,71 @@ func FuzzDecimalMul(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, dcoef int64, dscale int, ecoef int64, escale int) {
-		if dscale > gv.MaxScale || dscale < 0 {
-			t.Skip()
-			return
-		}
-		if escale > gv.MaxScale || escale < 0 {
+		// GoValues
+		gotGV, ok := mulGovalues(dcoef, dscale, ecoef, escale)
+		if !ok {
 			t.Skip()
 			return
 		}
 		// Cockroach DB
-		gotCD, ok := mulCockroachdb(dcoef, dscale, ecoef, escale)
-		if !ok {
-			t.Skip()
-			return
-		}
-		// GoValues
-		wantGV, err := mulGovalues(dcoef, dscale, ecoef, escale)
+		wantCD, err := mulCockroachdb(dcoef, dscale, ecoef, escale)
 		if err != nil {
-			t.Errorf("mul_govalues(%v, %v, %v, %v) failed: %v", dcoef, dscale, ecoef, escale, err)
+			t.Errorf("mulCockroachdb(%v, %v, %v, %v) failed: %v", dcoef, dscale, ecoef, escale, err)
 			return
 		}
-		if wantGV != gotCD {
-			t.Errorf("mul_cockroachdb(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotCD, wantGV)
+		if gotGV != wantCD {
+			t.Errorf("mulGovalues(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotGV, wantCD)
+			return
 		}
 		// ShopSpring
-		gotSS, ok := mulShopspring(dcoef, dscale, ecoef, escale)
-		if !ok {
-			t.Skip()
+		wantSS, err := mulShopspring(dcoef, dscale, ecoef, escale)
+		if err != nil {
+			t.Errorf("mulShopspring(%v, %v, %v, %v) failed: %v", dcoef, dscale, ecoef, escale, err)
 			return
 		}
-		if wantGV != gotSS {
-			t.Errorf("mul_shopspring(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotSS, wantGV)
+		if gotGV != wantSS {
+			t.Errorf("mulGovalues(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotGV, wantSS)
 		}
 	})
 }
 
-func addShopspring(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
+func addShopspring(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
 	d := ss.New(dcoef, int32(-dscale))
 	e := ss.New(ecoef, int32(-escale))
 	f := d.Add(e)
 	return roundShopspring(f)
 }
 
-func addCockroachdb(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
+func addCockroachdb(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
 	d := cd.New(dcoef, int32(-dscale))
 	e := cd.New(ecoef, int32(-escale))
 	f := cd.New(0, 0)
 	_, err := cd.BaseContext.Add(f, d, e)
 	if err != nil {
-		return "", false
+		return "", err
 	}
 	return roundCockroachdb(f)
 }
 
-func addGovalues(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
+func addGovalues(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
 	d, err := gv.New(dcoef, dscale)
 	if err != nil {
-		return "", err
+		return "", false
 	}
 	e, err := gv.New(ecoef, escale)
 	if err != nil {
-		return "", err
+		return "", false
 	}
 	f, err := d.Add(e)
 	if err != nil {
-		return "", err
+		return "", false
 	}
-	return f.Trim(0).String(), nil
+	return f.Trim(0).String(), true
 }
 
 func FuzzDecimalAdd(f *testing.F) {
-	ss.DivisionPrecision = 19
-	cd.BaseContext.Precision = 38
+	ss.DivisionPrecision = 100
+	cd.BaseContext.Precision = 100
 	cd.BaseContext.Rounding = cd.RoundHalfEven
 
 	for _, d := range corpus {
@@ -333,37 +319,30 @@ func FuzzDecimalAdd(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, dcoef int64, dscale int, ecoef int64, escale int) {
-		if dscale > gv.MaxScale || dscale < 0 {
-			t.Skip()
-			return
-		}
-		if escale > gv.MaxScale || escale < 0 {
+		// GoValues
+		gotGV, ok := addGovalues(dcoef, dscale, ecoef, escale)
+		if !ok {
 			t.Skip()
 			return
 		}
 		// Cockroach DB
-		gotCD, ok := addCockroachdb(dcoef, dscale, ecoef, escale)
-		if !ok {
-			t.Skip()
-			return
-		}
-		// GoValues
-		wantGV, err := addGovalues(dcoef, dscale, ecoef, escale)
+		wantCD, err := addCockroachdb(dcoef, dscale, ecoef, escale)
 		if err != nil {
-			t.Errorf("add_govalues(%v, %v, %v, %v) failed: %v", dcoef, dscale, ecoef, escale, err)
+			t.Errorf("addCockroachdb(%v, %v, %v, %v) failed: %v", dcoef, dscale, ecoef, escale, err)
 			return
 		}
-		if wantGV != gotCD {
-			t.Errorf("add_cockroachdb(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotCD, wantGV)
+		if gotGV != wantCD {
+			t.Errorf("addGovalues(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotGV, wantCD)
+			return
 		}
 		// ShopSpring
-		gotSS, ok := addShopspring(dcoef, dscale, ecoef, escale)
-		if !ok {
-			t.Skip()
+		wantSS, err := addShopspring(dcoef, dscale, ecoef, escale)
+		if err != nil {
+			t.Errorf("addShopspring(%v, %v, %v, %v) failed: %v", dcoef, dscale, ecoef, escale, err)
 			return
 		}
-		if wantGV != gotSS {
-			t.Errorf("add_shopspring(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotSS, wantGV)
+		if gotGV != wantSS {
+			t.Errorf("addGovalues(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotGV, wantSS)
 		}
 	})
 }
