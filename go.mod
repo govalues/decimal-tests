@@ -1,4 +1,4 @@
-module github.com/govalues/benchmarks
+module github.com/govalues/decimal_tests
 
 go 1.20
 

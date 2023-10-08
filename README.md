@@ -8,7 +8,7 @@ Additionally, the results of [govalues/decimal] are compared to [cockroachdb/apd
 Clone the repository:
 
 ```bash
-git clone https://github.com/govalues/benchmarks.git
+git clone https://github.com/govalues/decimal_tests.git
 ```
 
 Install the necessary dependencies:
@@ -20,17 +20,18 @@ go mod download
 
 ## Running Benchmarks
 
-To run all benchmarks, simply run the following command:
+To measure CPU usage, run the following command:
 
 ```bash
-go test -count=30 -timeout=60m -bench . github.com/govalues/benchmarks > results.txt
+go test -count=30 -timeout=120m -bench . github.com/govalues/decimal_tests > results.txt
+benchstat -filter ".unit:ns/op" -col /mod results.txt
 ```
 
-To print a summary of the benchmark results, including statistics such as mean,
-standard deviation, and confidence intervals, execute the following command:
+To measure RAM usage, run the following command:
 
 ```bash
-benchstat -col /mod results.txt
+go test -count=6 -timeout=30m -benchmem -bench . github.com/govalues/decimal_tests > results.txt
+benchstat -filter ".unit:B/op" -col /mod results.txt
 ```
 
 [govalues/decimal]: https://github.com/govalues/decimal
