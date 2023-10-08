@@ -1,4 +1,4 @@
-package decimal_tests
+package decimaltests
 
 import (
 	"testing"
