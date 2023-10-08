@@ -1,4 +1,4 @@
-package benchmarks
+package decimal_tests
 
 import (
 	"fmt"
