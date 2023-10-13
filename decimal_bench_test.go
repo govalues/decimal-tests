@@ -12,10 +12,10 @@ import (
 )
 
 var (
-	resultString string
-	resultFloat  float64
-	resultErr    error
-	resultSS     ss.Decimal
+	resultString  string
+	resultFloat   float64
+	resultError   error
+	resultDecimal ss.Decimal
 )
 
 func BenchmarkDecimal_Add(b *testing.B) {
@@ -23,7 +23,7 @@ func BenchmarkDecimal_Add(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			x := gv.MustNew(2, 0)
 			y := gv.MustNew(3, 0)
-			_, resultErr = x.Add(y)
+			_, resultError = x.Add(y)
 		}
 	})
 
@@ -34,7 +34,7 @@ func BenchmarkDecimal_Add(b *testing.B) {
 			x := cd.New(2, 0)
 			y := cd.New(3, 0)
 			z := cd.New(0, 0)
-			_, resultErr = cd.BaseContext.Add(z, x, y)
+			_, resultError = cd.BaseContext.Add(z, x, y)
 		}
 	})
 
@@ -42,7 +42,7 @@ func BenchmarkDecimal_Add(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			x := ss.New(2, 0)
 			y := ss.New(3, 0)
-			resultSS = x.Add(y)
+			resultDecimal = x.Add(y)
 		}
 	})
 }
@@ -52,7 +52,7 @@ func BenchmarkDecimal_Mul(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			x := gv.MustNew(2, 0)
 			y := gv.MustNew(3, 0)
-			_, resultErr = x.Mul(y)
+			_, resultError = x.Mul(y)
 		}
 	})
 
@@ -63,7 +63,7 @@ func BenchmarkDecimal_Mul(b *testing.B) {
 			x := cd.New(2, 0)
 			y := cd.New(3, 0)
 			z := cd.New(0, 0)
-			_, resultErr = cd.BaseContext.Mul(z, x, y)
+			_, resultError = cd.BaseContext.Mul(z, x, y)
 		}
 	})
 
@@ -71,7 +71,7 @@ func BenchmarkDecimal_Mul(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			x := ss.New(2, 0)
 			y := ss.New(3, 0)
-			resultSS = x.Mul(y)
+			resultDecimal = x.Mul(y)
 		}
 	})
 }
@@ -81,7 +81,7 @@ func BenchmarkDecimal_QuoFinite(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			x := gv.MustNew(2, 0)
 			y := gv.MustNew(4, 0)
-			_, resultErr = x.Quo(y)
+			_, resultError = x.Quo(y)
 		}
 	})
 
@@ -92,7 +92,7 @@ func BenchmarkDecimal_QuoFinite(b *testing.B) {
 			x := cd.New(2, 0)
 			y := cd.New(4, 0)
 			z := cd.New(0, 0)
-			_, resultErr = cd.BaseContext.Quo(z, x, y)
+			_, resultError = cd.BaseContext.Quo(z, x, y)
 		}
 	})
 
@@ -101,7 +101,7 @@ func BenchmarkDecimal_QuoFinite(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			x := ss.New(2, 0)
 			y := ss.New(4, 0)
-			resultSS = x.Div(y)
+			resultDecimal = x.Div(y)
 		}
 	})
 }
@@ -111,7 +111,7 @@ func BenchmarkDecimal_QuoInfinite(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			x := gv.MustNew(2, 0)
 			y := gv.MustNew(3, 0)
-			_, resultErr = x.Quo(y) // implicitly calculates 38 digits and rounds to 19 digits
+			_, resultError = x.Quo(y) // implicitly calculates 38 digits and rounds to 19 digits
 		}
 	})
 
@@ -122,8 +122,8 @@ func BenchmarkDecimal_QuoInfinite(b *testing.B) {
 			x := cd.New(2, 0)
 			y := cd.New(3, 0)
 			z := cd.New(0, 0)
-			_, resultErr = cd.BaseContext.Quo(z, x, y)
-			_, resultErr = cd.BaseContext.Quantize(z, z, -19)
+			_, resultError = cd.BaseContext.Quo(z, x, y)
+			_, resultError = cd.BaseContext.Quantize(z, z, -19)
 		}
 	})
 
@@ -132,7 +132,7 @@ func BenchmarkDecimal_QuoInfinite(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			x := ss.New(2, 0)
 			y := ss.New(3, 0)
-			resultSS = x.Div(y).RoundBank(19)
+			resultDecimal = x.Div(y).RoundBank(19)
 		}
 	})
 }
@@ -153,7 +153,7 @@ func BenchmarkDecimal_Pow(b *testing.B) {
 			b.Run("mod=govalues", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					x := gv.MustNew(tt.coef, int(tt.scale))
-					_, resultErr = x.Pow(int(tt.power)) // implicitly calculates 38 digits and rounds to 19 digits
+					_, resultError = x.Pow(int(tt.power)) // implicitly calculates 38 digits and rounds to 19 digits
 				}
 			})
 
@@ -164,7 +164,7 @@ func BenchmarkDecimal_Pow(b *testing.B) {
 					x := cd.New(tt.coef, -tt.scale)
 					y := cd.New(tt.power, 0)
 					z := cd.New(0, 0)
-					_, resultErr = cd.BaseContext.Pow(z, x, y)
+					_, resultError = cd.BaseContext.Pow(z, x, y)
 				}
 			})
 
@@ -173,7 +173,7 @@ func BenchmarkDecimal_Pow(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					x := ss.New(tt.coef, -tt.scale)
 					y := ss.New(tt.power, 0)
-					resultSS = x.Pow(y).RoundBank(19)
+					resultDecimal = x.Pow(y).RoundBank(19)
 				}
 			})
 		})
@@ -191,20 +191,20 @@ func BenchmarkParse(b *testing.B) {
 		b.Run(s, func(b *testing.B) {
 			b.Run("mod=govalues", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
-					_, resultErr = gv.Parse(s)
+					_, resultError = gv.Parse(s)
 				}
 			})
 
 			b.Run("mod=cockroachdb", func(b *testing.B) {
 				d := cd.New(0, 0)
 				for i := 0; i < b.N; i++ {
-					_, _, resultErr = d.SetString(s)
+					_, _, resultError = d.SetString(s)
 				}
 			})
 
 			b.Run("mod=shopspring", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
-					_, resultErr = ss.NewFromString(s)
+					_, resultError = ss.NewFromString(s)
 				}
 			})
 		})
@@ -268,20 +268,20 @@ func BenchmarkNewFromFloat64(b *testing.B) {
 		b.Run(name, func(b *testing.B) {
 			b.Run("mod=govalues", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
-					_, resultErr = gv.NewFromFloat64(f)
+					_, resultError = gv.NewFromFloat64(f)
 				}
 			})
 
 			b.Run("mod=cockroachdb", func(b *testing.B) {
 				d := cd.New(0, 0)
 				for i := 0; i < b.N; i++ {
-					_, resultErr = d.SetFloat64(f)
+					_, resultError = d.SetFloat64(f)
 				}
 			})
 
 			b.Run("mod=shopspring", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
-					resultSS = ss.NewFromFloat(f)
+					resultDecimal = ss.NewFromFloat(f)
 				}
 			})
 		})
@@ -316,7 +316,7 @@ func BenchmarkDecimal_Float64(b *testing.B) {
 				}
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					resultFloat, resultErr = d.Float64()
+					resultFloat, resultError = d.Float64()
 				}
 			})
 
