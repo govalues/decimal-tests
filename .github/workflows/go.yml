@@ -25,13 +25,13 @@ jobs:
       uses: golangci/golangci-lint-action@v3
 
     - name: Run fuzzing for addition
-      run: go test -fuzztime 20s -fuzz ^FuzzDecimalAdd$ github.com/govalues/decimaltests
+      run: go test -fuzztime 20s -fuzz ^FuzzDecimalAdd$ github.com/govalues/decimal-tests
 
     - name: Run fuzzing for multiplication
-      run: go test -fuzztime 20s -fuzz ^FuzzDecimalMul$ github.com/govalues/decimaltests
+      run: go test -fuzztime 20s -fuzz ^FuzzDecimalMul$ github.com/govalues/decimal-tests
 
     - name: Run fuzzing for division
-      run: go test -fuzztime 20s -fuzz ^FuzzDecimalQuo$ github.com/govalues/decimaltests
+      run: go test -fuzztime 20s -fuzz ^FuzzDecimalQuo$ github.com/govalues/decimal-tests
 
     - name: Run fuzzing for power
-      run: go test -fuzztime 40s -fuzz ^FuzzDecimalPow$ github.com/govalues/decimaltests
+      run: go test -fuzztime 40s -fuzz ^FuzzDecimalPow$ github.com/govalues/decimal-tests
