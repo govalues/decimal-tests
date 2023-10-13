@@ -1,6 +1,9 @@
 package decimal_test
 
 import (
+	"encoding/binary"
+	"io"
+	"os"
 	"testing"
 
 	cd "github.com/cockroachdb/apd/v3"
@@ -329,4 +332,235 @@ func BenchmarkDecimal_Float64(b *testing.B) {
 			})
 		})
 	}
+}
+
+func readTelcoTests() ([]int64, error) {
+	file, err := os.Open("expon180.1e6b")
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	data := make([]int64, 0, 1000000)
+	buf := make([]byte, 8)
+	for {
+		_, err := file.Read(buf)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		num := binary.BigEndian.Uint64(buf)
+		data = append(data, int64(num))
+	}
+	return data, nil
+}
+
+// BenchmarkDecimal_telco implements computational part of "[Telco benchmark]"
+// by Mike Cowlishaw.
+// I/O part is not implemented.
+//
+// [Telco benchmark]: https://speleotrove.com/decimal/telco.html
+func BenchmarkDecimal_Telco(b *testing.B) {
+	tests, err := readTelcoTests()
+	if err != nil {
+		b.Fatal(err)
+		return
+	}
+
+	b.Run("mod=govalues", func(b *testing.B) {
+		totalFinalPrice := gv.Zero
+		totalBaseTax := gv.Zero
+		totalDistTax := gv.Zero
+		baseRate := gv.MustParse("0.0013")
+		distRate := gv.MustParse("0.00894")
+		baseTaxRate := gv.MustParse("0.0675")
+		distTaxRate := gv.MustParse("0.0341")
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			var err error
+			tt := tests[i%len(tests)]
+			callType := tt & 0x01
+			duration := gv.MustNew(tt, 0)
+
+			// Price
+			var price gv.Decimal
+			if callType == 0 {
+				price, err = duration.Mul(baseRate)
+			} else {
+				price, err = duration.Mul(distRate)
+			}
+			if err != nil {
+				b.Fatal(err)
+			}
+			price = price.Round(2)
+
+			// Base Tax
+			baseTax, err := price.Mul(baseTaxRate)
+			if err != nil {
+				b.Fatal(err)
+			}
+			baseTax = baseTax.Trunc(2)
+			totalBaseTax, err = totalBaseTax.Add(baseTax)
+			if err != nil {
+				b.Fatal(err)
+			}
+			finalPrice, err := price.Add(baseTax)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			// Distance Tax
+			if callType != 0 {
+				distTax, err := price.Mul(distTaxRate)
+				if err != nil {
+					b.Fatal(err)
+				}
+				distTax = distTax.Trunc(2)
+				totalDistTax, err = totalDistTax.Add(distTax)
+				if err != nil {
+					b.Fatal(err)
+				}
+				finalPrice, err = finalPrice.Add(distTax)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+
+			// Final Price
+			totalFinalPrice, err = totalFinalPrice.Add(finalPrice)
+			if err != nil {
+				b.Fatal(err)
+			}
+			resultString = finalPrice.String()
+		}
+	})
+
+	b.Run("mod=cockroachdb", func(b *testing.B) {
+		cd.BaseContext.Precision = 19
+		cd.BaseContext.Rounding = cd.RoundHalfEven
+		totalFinalPrice := cd.New(0, 0)
+		totalBaseTax := cd.New(0, 0)
+		totalDistTax := cd.New(0, 0)
+		baseRate := cd.New(13, -4)     // 0.0013
+		distRate := cd.New(894, -5)    // 0.00894
+		baseTaxRate := cd.New(675, -4) // 0.0675
+		distTaxRate := cd.New(341, -4) // "0.0341"
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			var err error
+			tt := tests[i%len(tests)]
+			callType := tt & 0x01
+			duration := cd.New(tt, 0)
+
+			// Price
+			price := new(cd.Decimal)
+			if callType == 0 {
+				_, err = cd.BaseContext.Mul(price, duration, baseRate)
+			} else {
+				_, err = cd.BaseContext.Mul(price, duration, distRate)
+			}
+			if err != nil {
+				b.Fatal(err)
+			}
+			cd.BaseContext.Rounding = cd.RoundHalfEven
+			_, err = cd.BaseContext.Quantize(price, price, -2)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			// Base Tax
+			baseTax := new(cd.Decimal)
+			_, err = cd.BaseContext.Mul(baseTax, price, baseTaxRate)
+			if err != nil {
+				b.Fatal(err)
+			}
+			cd.BaseContext.Rounding = cd.RoundDown
+			_, err = cd.BaseContext.Quantize(baseTax, baseTax, -2)
+			if err != nil {
+				b.Fatal(err)
+			}
+			_, err = cd.BaseContext.Add(totalBaseTax, totalBaseTax, baseTax)
+			if err != nil {
+				b.Fatal(err)
+			}
+			finalPrice := new(cd.Decimal)
+			_, err = cd.BaseContext.Add(finalPrice, price, baseTax)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			// Distance Tax
+			if callType != 0 {
+				distTax := new(cd.Decimal)
+				_, err = cd.BaseContext.Mul(distTax, price, distTaxRate)
+				if err != nil {
+					b.Fatal(err)
+				}
+				cd.BaseContext.Rounding = cd.RoundDown
+				_, err = cd.BaseContext.Quantize(distTax, distTax, -2)
+				if err != nil {
+					b.Fatal(err)
+				}
+				_, err = cd.BaseContext.Add(totalDistTax, totalDistTax, distTax)
+				if err != nil {
+					b.Fatal(err)
+				}
+				_, err = cd.BaseContext.Add(finalPrice, finalPrice, distTax)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+
+			// Final Price
+			_, err = cd.BaseContext.Add(totalFinalPrice, totalFinalPrice, finalPrice)
+			if err != nil {
+				b.Fatal(err)
+			}
+			resultString = finalPrice.String()
+		}
+	})
+
+	b.Run("mod=shopspring", func(b *testing.B) {
+		totalFinalPrice := ss.Zero
+		totalBaseTax := ss.Zero
+		totalDistTax := ss.Zero
+		baseRate := ss.RequireFromString("0.0013")
+		distRate := ss.RequireFromString("0.00894")
+		baseTaxRate := ss.RequireFromString("0.0675")
+		distTaxRate := ss.RequireFromString("0.0341")
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			tt := tests[i%len(tests)]
+			callType := tt & 0x01
+			duration := ss.NewFromInt(tt)
+
+			// Price
+			var price ss.Decimal
+			if callType == 0 {
+				price = duration.Mul(baseRate)
+			} else {
+				price = duration.Mul(distRate)
+			}
+			price = price.RoundBank(2)
+
+			// Base Tax
+			baseTax := price.Mul(baseTaxRate)
+			baseTax = baseTax.RoundDown(2)
+			totalBaseTax = totalBaseTax.Add(baseTax)
+			finalPrice := price.Add(baseTax)
+
+			// Distance Tax
+			if callType != 0 {
+				distTax := price.Mul(distTaxRate)
+				distTax = distTax.RoundDown(2)
+				totalDistTax = totalDistTax.Add(distTax)
+				finalPrice = finalPrice.Add(distTax)
+			}
+
+			// Final Price
+			totalFinalPrice = totalFinalPrice.Add(finalPrice)
+			resultString = finalPrice.String()
+		}
+	})
 }
