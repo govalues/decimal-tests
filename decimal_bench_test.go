@@ -356,7 +356,7 @@ func readTelcoTests() ([]int64, error) {
 	return data, nil
 }
 
-// BenchmarkDecimal_telco implements computational part of "[Telco benchmark]"
+// BenchmarkDecimal_Telco implements computational part of "[Telco benchmark]"
 // by Mike Cowlishaw.
 // I/O part is not implemented.
 //
@@ -365,7 +365,6 @@ func BenchmarkDecimal_Telco(b *testing.B) {
 	tests, err := readTelcoTests()
 	if err != nil {
 		b.Fatal(err)
-		return
 	}
 
 	b.Run("mod=govalues", func(b *testing.B) {
