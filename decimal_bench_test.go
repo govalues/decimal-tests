@@ -223,7 +223,7 @@ func BenchmarkDecimal_String(b *testing.B) {
 			b.Run("mod=govalues", func(b *testing.B) {
 				d, err := gv.Parse(s)
 				if err != nil {
-					panic(err)
+					b.Fatal(err)
 				}
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
@@ -235,7 +235,7 @@ func BenchmarkDecimal_String(b *testing.B) {
 				d := cd.New(0, 0)
 				d, _, err := d.SetString(s)
 				if err != nil {
-					panic(err)
+					b.Fatal(err)
 				}
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
@@ -246,7 +246,7 @@ func BenchmarkDecimal_String(b *testing.B) {
 			b.Run("mod=shopspring", func(b *testing.B) {
 				d, err := ss.NewFromString(s)
 				if err != nil {
-					panic(err)
+					b.Fatal(err)
 				}
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
@@ -300,7 +300,7 @@ func BenchmarkDecimal_Float64(b *testing.B) {
 			b.Run("mod=govalues", func(b *testing.B) {
 				d, err := gv.Parse(s)
 				if err != nil {
-					panic(err)
+					b.Fatal(err)
 				}
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
@@ -312,7 +312,7 @@ func BenchmarkDecimal_Float64(b *testing.B) {
 				d := cd.New(0, 0)
 				d, _, err := d.SetString(s)
 				if err != nil {
-					panic(err)
+					b.Fatal(err)
 				}
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
@@ -323,7 +323,7 @@ func BenchmarkDecimal_Float64(b *testing.B) {
 			b.Run("mod=shopspring", func(b *testing.B) {
 				d, err := ss.NewFromString(s)
 				if err != nil {
-					panic(err)
+					b.Fatal(err)
 				}
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
@@ -380,6 +380,8 @@ func BenchmarkDecimal_Telco(b *testing.B) {
 			var err error
 			tt := tests[i%len(tests)]
 			callType := tt & 0x01
+
+			// Duration, Seconds
 			duration := gv.MustNew(tt, 0)
 
 			// Price
@@ -444,12 +446,14 @@ func BenchmarkDecimal_Telco(b *testing.B) {
 		baseRate := cd.New(13, -4)     // 0.0013
 		distRate := cd.New(894, -5)    // 0.00894
 		baseTaxRate := cd.New(675, -4) // 0.0675
-		distTaxRate := cd.New(341, -4) // "0.0341"
+		distTaxRate := cd.New(341, -4) // 0.0341
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			var err error
 			tt := tests[i%len(tests)]
 			callType := tt & 0x01
+
+			// Duration, Seconds
 			duration := cd.New(tt, 0)
 
 			// Price
@@ -532,6 +536,8 @@ func BenchmarkDecimal_Telco(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			tt := tests[i%len(tests)]
 			callType := tt & 0x01
+
+			// Duration, Seconds
 			duration := ss.NewFromInt(tt)
 
 			// Price
