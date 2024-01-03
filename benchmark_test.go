@@ -12,9 +12,10 @@ import (
 )
 
 var (
-	resultString  string
-	resultError   error
-	resultDecimal ss.Decimal
+	resultString string
+	resultError  error
+	resultGV     gv.Decimal
+	resultSS     ss.Decimal
 )
 
 func BenchmarkDecimal_Add(b *testing.B) {
@@ -35,7 +36,7 @@ func BenchmarkDecimal_Add(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					x := gv.MustNew(tt.xcoef, int(tt.xscale))
 					y := gv.MustNew(tt.ycoef, int(tt.yscale))
-					_, resultError = x.Add(y)
+					resultGV, resultError = x.Add(y)
 				}
 			})
 
@@ -54,7 +55,7 @@ func BenchmarkDecimal_Add(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					x := ss.New(tt.xcoef, -tt.xscale)
 					y := ss.New(tt.ycoef, -tt.yscale)
-					resultDecimal = x.Add(y)
+					resultSS = x.Add(y)
 				}
 			})
 		})
@@ -80,7 +81,7 @@ func BenchmarkDecimal_Mul(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					x := gv.MustNew(tt.xcoef, int(tt.xscale))
 					y := gv.MustNew(tt.ycoef, int(tt.yscale))
-					_, resultError = x.Mul(y)
+					resultGV, resultError = x.Mul(y)
 				}
 			})
 
@@ -99,7 +100,7 @@ func BenchmarkDecimal_Mul(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					x := ss.New(tt.xcoef, -tt.xscale)
 					y := ss.New(tt.ycoef, -tt.yscale)
-					resultDecimal = x.Mul(y)
+					resultSS = x.Mul(y)
 				}
 			})
 		})
@@ -124,7 +125,7 @@ func BenchmarkDecimal_QuoExact(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					x := gv.MustNew(tt.xcoef, int(tt.xscale))
 					y := gv.MustNew(tt.ycoef, int(tt.yscale))
-					_, resultError = x.Quo(y)
+					resultGV, resultError = x.Quo(y)
 				}
 			})
 
@@ -144,7 +145,7 @@ func BenchmarkDecimal_QuoExact(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					x := ss.New(tt.xcoef, -tt.xscale)
 					y := ss.New(tt.ycoef, -tt.yscale)
-					resultDecimal = x.Div(y)
+					resultSS = x.Div(y)
 				}
 			})
 		})
@@ -169,7 +170,7 @@ func BenchmarkDecimal_QuoInfinite(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					x := gv.MustNew(tt.xcoef, int(tt.xscale))
 					y := gv.MustNew(tt.ycoef, int(tt.yscale))
-					_, resultError = x.Quo(y) // implicitly calculates 38 digits and rounds to 19 digits
+					resultGV, resultError = x.Quo(y) // implicitly calculates 38 digits and rounds to 19 digits
 				}
 			})
 
@@ -190,7 +191,7 @@ func BenchmarkDecimal_QuoInfinite(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					x := ss.New(tt.xcoef, -tt.xscale)
 					y := ss.New(tt.ycoef, -tt.yscale)
-					resultDecimal = x.Div(y).RoundBank(19)
+					resultSS = x.Div(y).RoundBank(19)
 				}
 			})
 		})
@@ -213,7 +214,7 @@ func BenchmarkDecimal_Pow(b *testing.B) {
 			b.Run("mod=govalues", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					x := gv.MustNew(tt.coef, int(tt.scale))
-					_, resultError = x.Pow(int(tt.power)) // implicitly calculates 38 digits and rounds to 19 digits
+					resultGV, resultError = x.Pow(int(tt.power)) // implicitly calculates 38 digits and rounds to 19 digits
 				}
 			})
 
@@ -233,7 +234,7 @@ func BenchmarkDecimal_Pow(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					x := ss.New(tt.coef, -tt.scale)
 					y := ss.New(tt.power, 0)
-					resultDecimal = x.Pow(y).RoundBank(19)
+					resultSS = x.Pow(y).RoundBank(19)
 				}
 			})
 		})
@@ -251,7 +252,7 @@ func BenchmarkParse(b *testing.B) {
 		b.Run(s, func(b *testing.B) {
 			b.Run("mod=govalues", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
-					_, resultError = gv.Parse(s)
+					resultGV, resultError = gv.Parse(s)
 				}
 			})
 
@@ -264,7 +265,7 @@ func BenchmarkParse(b *testing.B) {
 
 			b.Run("mod=shopspring", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
-					_, resultError = ss.NewFromString(s)
+					resultSS, resultError = ss.NewFromString(s)
 				}
 			})
 		})
@@ -315,28 +316,6 @@ func BenchmarkDecimal_String(b *testing.B) {
 			})
 		})
 	}
-}
-
-func readTelcoTests() ([]int64, error) {
-	file, err := os.Open("expon180.1e6b")
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	data := make([]int64, 0, 1000000)
-	buf := make([]byte, 8)
-	for {
-		_, err := file.Read(buf)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		num := binary.BigEndian.Uint64(buf)
-		data = append(data, int64(num))
-	}
-	return data, nil
 }
 
 // BenchmarkDecimal_Telco implements computational part of "[Telco benchmark]"
@@ -551,4 +530,26 @@ func BenchmarkDecimal_Telco(b *testing.B) {
 			resultString = finalPrice.String()
 		}
 	})
+}
+
+func readTelcoTests() ([]int64, error) {
+	file, err := os.Open("expon180.1e6b")
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	data := make([]int64, 0, 1000000)
+	buf := make([]byte, 8)
+	for {
+		_, err := file.Read(buf)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		num := binary.BigEndian.Uint64(buf)
+		data = append(data, int64(num))
+	}
+	return data, nil
 }
