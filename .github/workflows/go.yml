@@ -8,7 +8,7 @@ jobs:
     steps:
 
     - name: Setup Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: stable 
         cache: false
@@ -17,7 +17,7 @@ jobs:
       uses: arduino/setup-task@v2
         
     - name: Check out code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Verify code formatting
       run: gofmt -s -w . && git diff --exit-code
@@ -26,7 +26,7 @@ jobs:
       run: go get -u -t ./... && go mod tidy && git diff --exit-code
 
     - name: Verify potential issues
-      uses: golangci/golangci-lint-action@v3
+      uses: golangci/golangci-lint-action@v4
 
-    - name: Run fuzzing for addition
+    - name: Run fuzz tests
       run: task fuzz
