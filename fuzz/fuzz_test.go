@@ -142,6 +142,50 @@ func FuzzDecimal_Mul(f *testing.F) {
 	})
 }
 
+func FuzzDecimal_FMA(f *testing.F) {
+	ss.DivisionPrecision = 100
+	ss.PowPrecisionNegativeExponent = 100
+	cd.BaseContext.Precision = 100
+	cd.BaseContext.Rounding = cd.RoundHalfEven
+
+	for _, d := range corpus {
+		for _, e := range corpus {
+			for _, g := range corpus {
+				f.Add(d.coef, d.scale, e.coef, e.scale, g.coef, g.scale)
+			}
+		}
+	}
+
+	f.Fuzz(func(t *testing.T, dcoef int64, dscale int, ecoef int64, escale int, fcoef int64, fscale int) {
+		// GoValues
+		gotGV, ok := fmaGV(dcoef, dscale, ecoef, escale, fcoef, fscale)
+		if !ok {
+			t.Skip()
+			return
+		}
+		// Cockroach DB
+		wantCD, err := fmaCD(dcoef, dscale, ecoef, escale, fcoef, fscale)
+		if err != nil {
+			t.Errorf("fmaCD(%v, %v, %v, %v, %v, %v) failed: %v", dcoef, dscale, ecoef, escale, fcoef, fscale, err)
+			return
+		}
+		if gotGV != wantCD {
+			t.Errorf("fmaGV(%v, %v, %v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, fcoef, fscale, gotGV, wantCD)
+			return
+		}
+		// ShopSpring
+		wantSS, err := fmaSS(dcoef, dscale, ecoef, escale, fcoef, fscale)
+		if err != nil {
+			t.Errorf("fmaSS(%v, %v, %v, %v, %v, %v) failed: %v", dcoef, dscale, ecoef, escale, fcoef, fscale, err)
+			return
+		}
+		if gotGV != wantSS {
+			t.Errorf("fmaGV(%v, %v, %v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, fcoef, fscale, gotGV, wantSS)
+			return
+		}
+	})
+}
+
 func FuzzDecimal_Quo(f *testing.F) {
 	ss.DivisionPrecision = 100
 	ss.PowPrecisionNegativeExponent = 100
@@ -330,6 +374,50 @@ func addGV(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
 		return "", false
 	}
 	return f.Trim(0).String(), true
+}
+
+func fmaGV(dcoef int64, dscale int, ecoef int64, escale int, fcoef int64, fscale int) (string, bool) {
+	d, err := gv.New(dcoef, dscale)
+	if err != nil {
+		return "", false
+	}
+	e, err := gv.New(ecoef, escale)
+	if err != nil {
+		return "", false
+	}
+	f, err := gv.New(fcoef, fscale)
+	if err != nil {
+		return "", false
+	}
+	g, err := d.FMA(e, f)
+	if err != nil {
+		return "", false
+	}
+	return g.Trim(0).String(), true
+}
+
+func fmaCD(dcoef int64, dscale int, ecoef int64, escale int, fcoef int64, fscale int) (string, error) {
+	d := cd.New(dcoef, int32(-dscale))
+	e := cd.New(ecoef, int32(-escale))
+	f := cd.New(fcoef, int32(-fscale))
+	g := cd.New(0, 0)
+	_, err := cd.BaseContext.Mul(g, d, e)
+	if err != nil {
+		return "", err
+	}
+	_, err = cd.BaseContext.Add(g, g, f)
+	if err != nil {
+		return "", err
+	}
+	return roundCD(g)
+}
+
+func fmaSS(dcoef int64, dscale int, ecoef int64, escale int, fcoef int64, fscale int) (string, error) {
+	d := ss.New(dcoef, int32(-dscale))
+	e := ss.New(ecoef, int32(-escale))
+	f := ss.New(fcoef, int32(-fscale))
+	g := d.Mul(e).Add(f)
+	return roundSS(g)
 }
 
 func powGV(dcoef int64, dscale int, power int) (string, bool) {

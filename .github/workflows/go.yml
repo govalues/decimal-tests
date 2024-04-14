@@ -13,7 +13,7 @@ jobs:
         go-version: stable 
         cache: false
 
-    - name: Install Task
+    - name: Setup Task
       uses: arduino/setup-task@v2
         
     - name: Check out code

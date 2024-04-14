@@ -9,10 +9,13 @@ tasks:
     desc: Run fuzz tests
     dir: fuzz
     cmds:
-      - go test -fuzztime 60s -fuzz ^FuzzDecimal_Add$
-      - go test -fuzztime 60s -fuzz ^FuzzDecimal_Mul$
-      - go test -fuzztime 60s -fuzz ^FuzzDecimal_Quo$
-      - go test -fuzztime 60s -fuzz ^FuzzDecimal_Pow$
+      - for:
+          - FuzzDecimal_Add
+          - FuzzDecimal_Mul
+          - FuzzDecimal_FMA
+          - FuzzDecimal_Quo
+          - FuzzDecimal_Pow
+        cmd: go test -fuzztime 60s -fuzz ^{{.ITEM}}$
 
   sql:
     desc: Run SQL tests
