@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres
+    ports:
+      - 5432:5432   
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: test
+    healthcheck:
+      test: pg_isready -h localhost -d $$POSTGRES_DB
+      start_interval: 20s
+      interval: 5s
+      timeout: 5s
+      retries: 8
+  mysql:
+    image: mysql
+    ports: 
+     - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: test
+      MYSQL_INITDB_SKIP_TZINFO: yes
+    healthcheck:
+      test: mysqladmin ping -h localhost
+      start_interval: 20s
+      interval: 5s
+      timeout: 5s
+      retries: 8
+  # mongo:
+  #   image: mongo
+  #   ports:
+  #     - 27017:27017
+  #   environment:
+  #     MONGO_INITDB_ROOT_USERNAME: root
+  #     MONGO_INITDB_ROOT_PASSWORD: password
+  #   healthcheck:
+  #     test: mongosh admin -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD --quiet --eval 'db.runCommand({serverStatus:1}).ok' | grep 1
+  #     start_interval: 20s
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 8

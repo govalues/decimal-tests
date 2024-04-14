@@ -24,6 +24,7 @@ go install github.com/go-task/task/v3/cmd/task@latest
 | Command      | Description                                                              |
 | ------------ | ------------------------------------------------------------------------ |
 | `task fuzz`  | Check the correctness against [cockroachdb/apd] and [shopspring/decimal] |
+| `task sql`   | Check compatibility with PostgreSQL, MySQL, and SQLite                   |
 | `task bench` | CPU and memory usage                                                     |
 
 [govalues/decimal]: https://github.com/govalues/decimal

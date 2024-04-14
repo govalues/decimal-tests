@@ -3,6 +3,7 @@ tasks:
   test:
     cmds:
       - task: fuzz
+      - task: sql
 
   fuzz:
     desc: Run correctness fuzz tests
@@ -12,6 +13,14 @@ tasks:
       - go test -fuzztime 60s -fuzz ^FuzzDecimal_Mul$
       - go test -fuzztime 60s -fuzz ^FuzzDecimal_Quo$
       - go test -fuzztime 60s -fuzz ^FuzzDecimal_Pow$
+
+  sql:
+    desc: Run SQL tests
+    dir: sql
+    cmds:
+      - docker compose up --detach --wait
+      - go test -count=1 -timeout=30m ./...
+      - docker compose down
 
   bench:
     desc: Run CPU and memory benchmarks
