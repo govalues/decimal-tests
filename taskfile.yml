@@ -1,0 +1,23 @@
+version: "3"
+tasks:
+  test:
+    cmds:
+      - task: fuzz
+
+  fuzz:
+    desc: Run correctness fuzz tests
+    dir: fuzz
+    cmds:
+      - go test -fuzztime 60s -fuzz ^FuzzDecimal_Add$
+      - go test -fuzztime 60s -fuzz ^FuzzDecimal_Mul$
+      - go test -fuzztime 60s -fuzz ^FuzzDecimal_Quo$
+      - go test -fuzztime 60s -fuzz ^FuzzDecimal_Pow$
+
+  bench:
+    desc: Run CPU and memory benchmarks
+    dir: bench
+    cmds:
+      - go test -count=30 -timeout=120m -bench . github.com/govalues/decimal-tests/bench > benchcpu.txt
+      - benchstat -filter ".unit:ns/op" -col /mod benchcpu.txt
+      - go test -count=6 -timeout=30m -benchmem -bench . github.com/govalues/decimal-tests/comparative > benchmem.txt
+      - benchstat -filter ".unit:B/op" -col /mod benchmem.txt

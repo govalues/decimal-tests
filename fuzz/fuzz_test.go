@@ -62,6 +62,7 @@ var corpus = []struct {
 
 func FuzzDecimal_Add(f *testing.F) {
 	ss.DivisionPrecision = 100
+	ss.PowPrecisionNegativeExponent = 100
 	cd.BaseContext.Precision = 100
 	cd.BaseContext.Rounding = cd.RoundHalfEven
 
@@ -102,6 +103,7 @@ func FuzzDecimal_Add(f *testing.F) {
 
 func FuzzDecimal_Mul(f *testing.F) {
 	ss.DivisionPrecision = 100
+	ss.PowPrecisionNegativeExponent = 100
 	cd.BaseContext.Precision = 100
 	cd.BaseContext.Rounding = cd.RoundHalfEven
 
@@ -142,6 +144,7 @@ func FuzzDecimal_Mul(f *testing.F) {
 
 func FuzzDecimal_Quo(f *testing.F) {
 	ss.DivisionPrecision = 100
+	ss.PowPrecisionNegativeExponent = 100
 	cd.BaseContext.Precision = 100
 	cd.BaseContext.Rounding = cd.RoundHalfEven
 
@@ -183,6 +186,7 @@ func FuzzDecimal_Quo(f *testing.F) {
 
 func FuzzDecimal_Pow(f *testing.F) {
 	ss.DivisionPrecision = 100
+	ss.PowPrecisionNegativeExponent = 100
 	cd.BaseContext.Precision = 100
 	cd.BaseContext.Rounding = cd.RoundHalfEven
 

@@ -11,7 +11,11 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: stable 
+        cache: false
 
+    - name: Install Task
+      uses: arduino/setup-task@v2
+        
     - name: Check out code
       uses: actions/checkout@v3
 
@@ -19,19 +23,10 @@ jobs:
       run: gofmt -s -w . && git diff --exit-code
 
     - name: Verify dependency consistency
-      run: go get -u -t . && go mod tidy && git diff --exit-code
+      run: go get -u -t ./... && go mod tidy && git diff --exit-code
 
     - name: Verify potential issues
       uses: golangci/golangci-lint-action@v3
 
     - name: Run fuzzing for addition
-      run: go test -fuzztime 20s -fuzz ^FuzzDecimal_Add$ github.com/govalues/decimal-tests
-
-    - name: Run fuzzing for multiplication
-      run: go test -fuzztime 20s -fuzz ^FuzzDecimal_Mul$ github.com/govalues/decimal-tests
-
-    - name: Run fuzzing for division
-      run: go test -fuzztime 20s -fuzz ^FuzzDecimal_Quo$ github.com/govalues/decimal-tests
-
-    - name: Run fuzzing for power
-      run: go test -fuzztime 40s -fuzz ^FuzzDecimal_Pow$ github.com/govalues/decimal-tests
+      run: task fuzz

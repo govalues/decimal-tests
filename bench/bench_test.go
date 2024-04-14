@@ -231,6 +231,7 @@ func BenchmarkDecimal_Pow(b *testing.B) {
 
 			b.Run("mod=shopspring", func(b *testing.B) {
 				ss.DivisionPrecision = 19
+				ss.PowPrecisionNegativeExponent = 19
 				for i := 0; i < b.N; i++ {
 					x := ss.New(tt.coef, -tt.scale)
 					y := ss.New(tt.power, 0)
