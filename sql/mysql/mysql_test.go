@@ -14,9 +14,9 @@ const (
 	url           = "root:password@tcp(localhost:3306)/test"
 	selectNull    = "SELECT null"
 	dropTable     = "DROP TABLE IF EXISTS decimal_tests"
-	createTable   = "CREATE TABLE decimal_tests (id INT AUTO_INCREMENT PRIMARY KEY, number DECIMAL(19,2))"
-	insertDecimal = "INSERT INTO decimal_tests (number) VALUES (?)"
-	selectDecimal = "SELECT number FROM decimal_tests WHERE id = ?"
+	createTable   = "CREATE TABLE decimal_tests (id INT AUTO_INCREMENT PRIMARY KEY, num1 VARCHAR(22), num2 DECIMAL(19,2), num3 DECIMAL(19, 0))"
+	insertDecimal = "INSERT INTO decimal_tests (num1, num2, num3) VALUES (?, ?, ?)"
+	selectDecimal = "SELECT num1, num2, num3 FROM decimal_tests WHERE id = ?"
 )
 
 var db *sql.DB
@@ -66,88 +66,82 @@ func TestDecimal_selectNull(t *testing.T) {
 
 func TestDecimal_insert(t *testing.T) {
 	tests := []struct {
-		d, want string
+		d, want1, want2, want3 string
 	}{
-		{"0", "0.00"},
-		{"0.0", "0.00"},
-		{"0.00", "0.00"},
-		{"0.000", "0.00"},
-		{"0.000000000000000000", "0.00"},
+		{"0", "0", "0.00", "0"},
+		{"0.0", "0.0", "0.00", "0"},
+		{"0.00", "0.00", "0.00", "0"},
+		{"0.000", "0.000", "0.00", "0"},
+		{"0.000000000000000000", "0.000000000000000000", "0.00", "0"},
 
-		{"1", "1.00"},
-		{"1.0", "1.00"},
-		{"1.00", "1.00"},
-		{"1.000", "1.00"},
-		{"1.000000000000000000", "1.00"},
+		{"1", "1", "1.00", "1"},
+		{"1.0", "1.0", "1.00", "1"},
+		{"1.00", "1.00", "1.00", "1"},
+		{"1.000", "1.000", "1.00", "1"},
+		{"1.000000000000000000", "1.000000000000000000", "1.00", "1"},
 
-		{"-1", "-1.00"},
-		{"-1.0", "-1.00"},
-		{"-1.00", "-1.00"},
-		{"-1.000", "-1.00"},
-		{"-1.000000000000000000", "-1.00"},
+		{"-1", "-1", "-1.00", "-1"},
+		{"-1.0", "-1.0", "-1.00", "-1"},
+		{"-1.00", "-1.00", "-1.00", "-1"},
+		{"-1.000", "-1.000", "-1.00", "-1"},
+		{"-1.000000000000000000", "-1.000000000000000000", "-1.00", "-1"},
 
-		{"0.1", "0.10"},
-		{"0.10", "0.10"},
-		{"0.100", "0.10"},
-		{"0.1000", "0.10"},
-		{"0.1000000000000000000", "0.10"},
+		{"0.1", "0.1", "0.10", "0"},
+		{"0.10", "0.10", "0.10", "0"},
+		{"0.100", "0.100", "0.10", "0"},
+		{"0.1000", "0.1000", "0.10", "0"},
+		{"0.1000000000000000000", "0.1000000000000000000", "0.10", "0"},
 
-		{"-0.1", "-0.10"},
-		{"-0.10", "-0.10"},
-		{"-0.100", "-0.10"},
-		{"-0.1000", "-0.10"},
-		{"-0.1000000000000000000", "-0.10"},
+		{"-0.1", "-0.1", "-0.10", "0"},
+		{"-0.10", "-0.10", "-0.10", "0"},
+		{"-0.100", "-0.100", "-0.10", "0"},
+		{"-0.1000", "-0.1000", "-0.10", "0"},
+		{"-0.1000000000000000000", "-0.1000000000000000000", "-0.10", "0"},
 
-		{"0.1", "0.10"},
-		{"0.01", "0.01"},
-		{"0.001", "0.00"},
-		{"0.0001", "0.00"},
-		{"0.0000000000000000001", "0.00"},
+		{"0.1", "0.1", "0.10", "0"},
+		{"0.01", "0.01", "0.01", "0"},
+		{"0.001", "0.001", "0.00", "0"},
+		{"0.0001", "0.0001", "0.00", "0"},
+		{"0.0000000000000000001", "0.0000000000000000001", "0.00", "0"},
 
-		{"-0.1", "-0.10"},
-		{"-0.01", "-0.01"},
-		{"-0.001", "-0.00"},
-		{"-0.0001", "-0.00"},
-		{"-0.0000000000000000001", "-0.00"},
+		{"-0.1", "-0.1", "-0.10", "0"},
+		{"-0.01", "-0.01", "-0.01", "0"},
+		{"-0.001", "-0.001", "0.00", "0"},
+		{"-0.0001", "-0.0001", "0.00", "0"},
+		{"-0.0000000000000000001", "-0.0000000000000000001", "0.00", "0"},
 
-		{"1", "1.00"},
-		{"10", "10.00"},
-		{"100", "100.00"},
-		{"1000", "1000.00"},
-		{"10000000000000000", "10000000000000000.00"},
-		{"10000000000000000.00", "10000000000000000.00"},
+		{"1", "1", "1.00", "1"},
+		{"10", "10", "10.00", "10"},
+		{"100", "100", "100.00", "100"},
+		{"1000", "1000", "1000.00", "1000"},
+		{"10000000000000000", "10000000000000000", "10000000000000000.00", "10000000000000000"},
 
-		{"-1", "-1.00"},
-		{"-10", "-10.00"},
-		{"-100", "-100.00"},
-		{"-1000", "-1000.00"},
-		{"-10000000000000000", "-10000000000000000.00"},
+		{"-1", "-1", "-1.00", "-1"},
+		{"-10", "-10", "-10.00", "-10"},
+		{"-100", "-100", "-100.00", "-100"},
+		{"-1000", "-1000", "-1000.00", "-1000"},
+		{"-10000000000000000", "-10000000000000000", "-10000000000000000.00", "-10000000000000000"},
 
-		{"99999999999999999.99", "99999999999999999.99"},
-		{"-99999999999999999.99", "-99999999999999999.99"},
+		{"0.005", "0.005", "0.01", "0"},
+		{"0.015", "0.015", "0.02", "0"},
+		{"0.025", "0.025", "0.03", "0"},
+		{"0.035", "0.035", "0.04", "0"},
 
-		// Rounding
+		{"-0.005", "-0.005", "-0.01", "0"},
+		{"-0.015", "-0.015", "-0.02", "0"},
+		{"-0.025", "-0.025", "-0.03", "0"},
+		{"-0.035", "-0.035", "-0.04", "0"},
 
-		{"0.005", "0.01"},
-		{"0.015", "0.02"},
-		{"0.025", "0.03"},
-		{"0.035", "0.04"},
+		{"9999999999999999.994", "9999999999999999.994", "9999999999999999.99", "10000000000000000"},
+		{"9999999999999999.995", "9999999999999999.995", "10000000000000000.00", "10000000000000000"},
+		{"9999999999999999.996", "9999999999999999.996", "10000000000000000.00", "10000000000000000"},
 
-		{"-0.005", "-0.01"},
-		{"-0.015", "-0.02"},
-		{"-0.025", "-0.03"},
-		{"-0.035", "-0.04"},
+		{"-9999999999999999.994", "-9999999999999999.994", "-9999999999999999.99", "-10000000000000000"},
+		{"-9999999999999999.995", "-9999999999999999.995", "-10000000000000000.00", "-10000000000000000"},
+		{"-9999999999999999.996", "-9999999999999999.996", "-10000000000000000.00", "-10000000000000000"},
 
-		{"9999999999999999.994", "9999999999999999.99"},
-		{"9999999999999999.995", "10000000000000000.00"},
-		{"9999999999999999.996", "10000000000000000.00"},
-
-		{"-9999999999999999.994", "-9999999999999999.99"},
-		{"-9999999999999999.995", "-10000000000000000.00"},
-		{"-9999999999999999.996", "-10000000000000000.00"},
-
-		{"2.718281828459045235", "2.72"},
-		{"3.141592653589793238", "3.14"},
+		{"2.718281828459045235", "2.718281828459045235", "2.72", "3"},
+		{"3.141592653589793238", "3.141592653589793238", "3.14", "3"},
 	}
 
 	t.Run("decimal.Decimal", func(t *testing.T) {
@@ -157,7 +151,7 @@ func TestDecimal_insert(t *testing.T) {
 				t.Errorf("Parse(%q) failed: %v", tt.d, err)
 				continue
 			}
-			result, err := db.Exec(insertDecimal, d)
+			result, err := db.Exec(insertDecimal, d, d, d)
 			if err != nil {
 				t.Errorf("Exec(%q, %v) failed: %v", insertDecimal, d, err)
 				continue
@@ -168,19 +162,40 @@ func TestDecimal_insert(t *testing.T) {
 				continue
 			}
 			row := db.QueryRow(selectDecimal, rowID)
-			got := decimal.Decimal{}
-			err = row.Scan(&got)
+			var got1, got2, got3 decimal.Decimal
+			err = row.Scan(&got1, &got2, &got3)
 			if err != nil {
 				t.Errorf("QueryRow(%q, %v) failed: %v", selectDecimal, rowID, err)
 				continue
 			}
-			want, err := decimal.Parse(tt.want)
+
+			want1, err := decimal.Parse(tt.want1)
 			if err != nil {
-				t.Errorf("Parse(%q) failed: %v", tt.want, err)
+				t.Errorf("Parse(%q) failed: %v", tt.want1, err)
 				continue
 			}
-			if got != want {
-				t.Errorf("Scan() = %v, want %v", got, want)
+			if got1 != want1 {
+				t.Errorf("Scan(&got1) = %v, want %v", got1, want1)
+				continue
+			}
+
+			want2, err := decimal.Parse(tt.want2)
+			if err != nil {
+				t.Errorf("Parse(%q) failed: %v", tt.want2, err)
+				continue
+			}
+			if got2 != want2 {
+				t.Errorf("Scan(&got2) = %v, want %v", got2, want2)
+				continue
+			}
+
+			want3, err := decimal.Parse(tt.want3)
+			if err != nil {
+				t.Errorf("Parse(%q) failed: %v", tt.want3, err)
+				continue
+			}
+			if got3 != want3 {
+				t.Errorf("Scan(&got3) = %v, want %v", got1, want3)
 				continue
 			}
 		}
@@ -194,7 +209,7 @@ func TestDecimal_insert(t *testing.T) {
 				t.Errorf("Scan(%v) failed: %v", tt.d, err)
 				continue
 			}
-			result, err := db.Exec(insertDecimal, d)
+			result, err := db.Exec(insertDecimal, d, d, d)
 			if err != nil {
 				t.Errorf("Exec(%q, %v) failed: %v", insertDecimal, d, err)
 				continue
@@ -205,20 +220,43 @@ func TestDecimal_insert(t *testing.T) {
 				continue
 			}
 			row := db.QueryRow(selectDecimal, rowID)
-			got := decimal.NullDecimal{}
-			err = row.Scan(&got)
+			var got1, got2, got3 decimal.NullDecimal
+			err = row.Scan(&got1, &got2, &got3)
 			if err != nil {
 				t.Errorf("QueryRow(%q, %v) failed: %v", selectDecimal, rowID, err)
 				continue
 			}
-			want := decimal.NullDecimal{}
-			err = want.Scan(tt.want)
+
+			want1 := decimal.NullDecimal{}
+			err = want1.Scan(tt.want1)
 			if err != nil {
-				t.Errorf("Scan(%q) failed: %v", tt.want, err)
+				t.Errorf("Scan(%q) failed: %v", tt.want1, err)
 				continue
 			}
-			if got != want {
-				t.Errorf("Scan() = %v, want %v", got, want)
+			if got1 != want1 {
+				t.Errorf("Scan(&got1) = %v, want %v", got1, want1)
+				continue
+			}
+
+			want2 := decimal.NullDecimal{}
+			err = want2.Scan(tt.want2)
+			if err != nil {
+				t.Errorf("Scan(%q) failed: %v", tt.want2, err)
+				continue
+			}
+			if got2 != want2 {
+				t.Errorf("Scan(&got2) = %v, want %v", got2, want2)
+				continue
+			}
+
+			want3 := decimal.NullDecimal{}
+			err = want3.Scan(tt.want3)
+			if err != nil {
+				t.Errorf("Scan(%q) failed: %v", tt.want3, err)
+				continue
+			}
+			if got3 != want3 {
+				t.Errorf("Scan(&got3) = %v, want %v", got3, want3)
 				continue
 			}
 		}

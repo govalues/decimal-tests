@@ -29,7 +29,7 @@ tasks:
     desc: Run CPU and memory benchmarks
     dir: bench
     cmds:
-      - go test -count=20 -timeout=120m -bench . github.com/govalues/decimal-tests/bench > benchcpu.txt
+      - go test -count=20 -timeout=120m -bench . > benchcpu.txt
       - benchstat -filter ".unit:ns/op" -col /mod benchcpu.txt
-      - go test -count=1 -timeout=30m -benchmem -bench . github.com/govalues/decimal-tests/bench > benchmem.txt
+      - go test -count=1 -timeout=30m -benchmem -bench . > benchmem.txt
       - benchstat -filter ".unit:B/op" -col /mod benchmem.txt
