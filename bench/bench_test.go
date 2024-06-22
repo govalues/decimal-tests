@@ -242,6 +242,47 @@ func BenchmarkDecimal_Pow(b *testing.B) {
 	}
 }
 
+func BenchmarkDecimal_Sqrt(b *testing.B) {
+	tests := map[string]struct {
+		coef  int64
+		scale int32
+	}{
+		"2.0":      {2, 0},
+		"2.0000":   {20000, 4},
+		"2.000000": {2000000, 6},
+	}
+
+	for name, tt := range tests {
+		b.Run(name, func(b *testing.B) {
+			b.Run("mod=govalues", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					x := gv.MustNew(tt.coef, int(tt.scale))
+					resultGV, resultError = x.Sqrt() // implicitly calculates 38 digits and rounds to 19 digits
+				}
+			})
+
+			b.Run("mod=cockroachdb", func(b *testing.B) {
+				cd.BaseContext.Precision = 19
+				cd.BaseContext.Rounding = cd.RoundHalfEven
+				for i := 0; i < b.N; i++ {
+					x := cd.New(tt.coef, -tt.scale)
+					z := cd.New(0, 0)
+					_, resultError = cd.BaseContext.Sqrt(z, x)
+				}
+			})
+
+			b.Run("mod=shopspring", func(b *testing.B) {
+				ss.DivisionPrecision = 19
+				for i := 0; i < b.N; i++ {
+					x := ss.New(tt.coef, -tt.scale)
+					y := ss.New(5, -1)
+					resultSS, resultError = x.PowWithPrecision(y, 19)
+				}
+			})
+		})
+	}
+}
+
 func BenchmarkParse(b *testing.B) {
 	tests := []string{
 		"1",

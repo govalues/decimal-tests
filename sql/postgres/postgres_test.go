@@ -41,8 +41,8 @@ func TestMain(m *testing.M) {
 
 func TestDecimal_selectNull(t *testing.T) {
 	t.Run("decimal.Decimal", func(t *testing.T) {
-		got := decimal.Decimal{}
 		row := db.QueryRow(selectNull)
+		got := decimal.Decimal{}
 		err := row.Scan(&got)
 		if err == nil {
 			t.Errorf("QueryRow(%q) did not fail", selectNull)

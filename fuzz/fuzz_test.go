@@ -241,6 +241,10 @@ func FuzzDecimal_Pow(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, dcoef int64, dscale int, power int) {
+		if dcoef == 0 {
+			t.Skip()
+			return
+		}
 		// GoValues
 		gotGV, ok := powGV(dcoef, dscale, power)
 		if !ok {
@@ -272,6 +276,77 @@ func FuzzDecimal_Pow(f *testing.F) {
 			t.Errorf("powGV(%v, %v, %v) = %v, want %v", dcoef, dscale, power, gotGV, wantSS)
 		}
 	})
+}
+
+func FuzzDecimal_Sqrt(f *testing.F) {
+	ss.DivisionPrecision = 100
+	ss.PowPrecisionNegativeExponent = 100
+	cd.BaseContext.Precision = 100
+	cd.BaseContext.Rounding = cd.RoundHalfEven
+
+	for _, d := range corpus {
+		f.Add(d.coef, d.scale)
+	}
+
+	f.Fuzz(func(t *testing.T, dcoef int64, dscale int) {
+		// GoValues
+		gotGV, ok := sqrtGV(dcoef, dscale)
+		if !ok {
+			t.Skip()
+			return
+		}
+		// Cockroach DB
+		wantCD, err := sqrtCD(dcoef, dscale)
+		if err != nil {
+			t.Errorf("sqrtCD(%v, %v) failed: %v", dcoef, dscale, err)
+			return
+		}
+		if gotGV != wantCD {
+			t.Errorf("sqrtGV(%v, %v) = %v, want %v", dcoef, dscale, gotGV, wantCD)
+			return
+		}
+		// ShopSpring
+		wantSS, err := sqrtSS(dcoef, dscale)
+		if err != nil {
+			t.Errorf("sqrtSS(%v, %v) failed: %v", dcoef, dscale, err)
+			return
+		}
+		if gotGV != wantSS {
+			t.Errorf("sqrtGV(%v, %v) = %v, want %v", dcoef, dscale, gotGV, wantSS)
+		}
+	})
+}
+
+func sqrtGV(dcoef int64, dscale int) (string, bool) {
+	d, err := gv.New(dcoef, dscale)
+	if err != nil {
+		return "", false
+	}
+	f, err := d.Sqrt()
+	if err != nil {
+		return "", false
+	}
+	return f.Trim(0).String(), true
+}
+
+func sqrtCD(dcoef int64, dscale int) (string, error) {
+	d := cd.New(dcoef, int32(-dscale))
+	f := cd.New(0, 0)
+	_, err := cd.BaseContext.Sqrt(f, d)
+	if err != nil {
+		return "", err
+	}
+	return roundCD(f)
+}
+
+func sqrtSS(dcoef int64, dscale int) (string, error) {
+	d := ss.New(dcoef, int32(-dscale))
+	e := ss.New(5, -1)
+	f, err := d.PowWithPrecision(e, 100)
+	if err != nil {
+		return "", err
+	}
+	return roundSS(f)
 }
 
 func quoGV(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {

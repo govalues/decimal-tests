@@ -15,6 +15,7 @@ tasks:
           - FuzzDecimal_FMA
           - FuzzDecimal_Quo
           - FuzzDecimal_Pow
+          - FuzzDecimal_Sqrt
         cmd: go test -fuzztime 60s -fuzz ^{{.ITEM}}$
 
   sql:
