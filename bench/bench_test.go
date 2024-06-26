@@ -234,8 +234,8 @@ func BenchmarkDecimal_Pow(b *testing.B) {
 				ss.PowPrecisionNegativeExponent = 19
 				for i := 0; i < b.N; i++ {
 					x := ss.New(tt.coef, -tt.scale)
-					y := ss.New(tt.power, 0)
-					resultSS = x.Pow(y).RoundBank(19)
+					resultSS, resultError = x.PowInt32(int32(tt.power))
+					resultSS = resultSS.RoundBank(19)
 				}
 			})
 		})

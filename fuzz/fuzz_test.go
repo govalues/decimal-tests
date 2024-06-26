@@ -523,9 +523,11 @@ func powCD(dcoef int64, dscale int, power int) (string, error) {
 
 func powSS(dcoef int64, dscale int, power int) (string, error) {
 	d := ss.New(dcoef, int32(-dscale))
-	e := ss.New(int64(power), 0)
-	f := d.Pow(e)
-	return roundSS(f)
+	e, err := d.PowInt32(int32(power))
+	if err != nil {
+		return "", err
+	}
+	return roundSS(e)
 }
 
 // cmpULP compares decimals and returns 0 if they are within 1 ULP.
