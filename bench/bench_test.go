@@ -25,10 +25,7 @@ func BenchmarkDecimal_Add(b *testing.B) {
 		ycoef  int64
 		yscale int32
 	}{
-		"5+6":                           {5, 0, 6, 0},
-		"5.000000+6.000000":             {5000000, 6, 6000000, 6},
-		"5.000000000000+6.000000000000": {5000000000000, 12, 6000000000000, 12},
-		"5.000000000000000000+6.000000000000000000": {5000000000000000000, 18, 6000000000000000000, 18},
+		"5+6": {5, 0, 6, 0},
 	}
 	for name, tt := range tests {
 		b.Run(name, func(b *testing.B) {
@@ -69,10 +66,7 @@ func BenchmarkDecimal_Mul(b *testing.B) {
 		ycoef  int64
 		yscale int32
 	}{
-		"2*3":                           {2, 0, 3, 0},
-		"2.000000*3.000000":             {2000000, 6, 3000000, 6},
-		"2.000000000000*3.000000000000": {2000000000000, 12, 3000000000000, 12},
-		"2.000000000000000000*3.000000000000000000": {2000000000000000000, 18, 3000000000000000000, 18},
+		"2*3": {2, 0, 3, 0},
 	}
 
 	for name, tt := range tests {
@@ -114,10 +108,7 @@ func BenchmarkDecimal_QuoExact(b *testing.B) {
 		ycoef  int64
 		yscale int32
 	}{
-		"2÷4":                           {2, 0, 4, 0},
-		"2.000000÷4.000000":             {2000000, 6, 4000000, 6},
-		"2.000000000000÷4.000000000000": {2000000000000, 12, 4000000000000, 12},
-		"2.000000000000000000÷4.000000000000000000": {2000000000000000000, 18, 4000000000000000000, 18},
+		"2÷4": {2, 0, 4, 0},
 	}
 	for name, tt := range tests {
 		b.Run(name, func(b *testing.B) {
@@ -159,10 +150,7 @@ func BenchmarkDecimal_QuoInfinite(b *testing.B) {
 		ycoef  int64
 		yscale int32
 	}{
-		"2÷3":                           {2, 0, 3, 0},
-		"2.000000÷3.000000":             {2000000, 6, 3000000, 6},
-		"2.000000000000÷3.000000000000": {2000000000000, 12, 3000000000000, 12},
-		"2.000000000000000000÷3.000000000000000000": {2000000000000000000, 18, 3000000000000000000, 18},
+		"2÷3": {2, 0, 3, 0},
 	}
 	for name, tt := range tests {
 		b.Run(name, func(b *testing.B) {
@@ -170,28 +158,27 @@ func BenchmarkDecimal_QuoInfinite(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					x := gv.MustNew(tt.xcoef, int(tt.xscale))
 					y := gv.MustNew(tt.ycoef, int(tt.yscale))
-					resultGV, resultError = x.Quo(y) // implicitly calculates 38 digits and rounds to 19 digits
+					resultGV, resultError = x.Quo(y)
 				}
 			})
 
 			b.Run("mod=cockroachdb", func(b *testing.B) {
-				cd.BaseContext.Precision = 38
+				cd.BaseContext.Precision = 19
 				cd.BaseContext.Rounding = cd.RoundHalfEven
 				for i := 0; i < b.N; i++ {
 					x := cd.New(tt.xcoef, -tt.xscale)
 					y := cd.New(tt.ycoef, -tt.yscale)
 					z := cd.New(0, 0)
 					_, resultError = cd.BaseContext.Quo(z, x, y)
-					_, resultError = cd.BaseContext.Quantize(z, z, -19)
 				}
 			})
 
 			b.Run("mod=shopspring", func(b *testing.B) {
-				ss.DivisionPrecision = 38
+				ss.DivisionPrecision = 19
 				for i := 0; i < b.N; i++ {
 					x := ss.New(tt.xcoef, -tt.xscale)
 					y := ss.New(tt.ycoef, -tt.yscale)
-					resultSS = x.Div(y).RoundBank(19)
+					resultSS = x.Div(y)
 				}
 			})
 		})
@@ -214,7 +201,7 @@ func BenchmarkDecimal_Pow(b *testing.B) {
 			b.Run("mod=govalues", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					x := gv.MustNew(tt.coef, int(tt.scale))
-					resultGV, resultError = x.Pow(int(tt.power)) // implicitly calculates 38 digits and rounds to 19 digits
+					resultGV, resultError = x.Pow(int(tt.power))
 				}
 			})
 
@@ -230,12 +217,10 @@ func BenchmarkDecimal_Pow(b *testing.B) {
 			})
 
 			b.Run("mod=shopspring", func(b *testing.B) {
-				ss.DivisionPrecision = 19
 				ss.PowPrecisionNegativeExponent = 19
 				for i := 0; i < b.N; i++ {
 					x := ss.New(tt.coef, -tt.scale)
 					resultSS, resultError = x.PowInt32(int32(tt.power))
-					resultSS = resultSS.RoundBank(19)
 				}
 			})
 		})
@@ -247,9 +232,9 @@ func BenchmarkDecimal_Sqrt(b *testing.B) {
 		coef  int64
 		scale int32
 	}{
-		"2.0":      {2, 0},
-		"2.0000":   {20000, 4},
-		"2.000000": {2000000, 6},
+		"0.0000000000000000002": {2, 19},
+		"2":                     {2, 0},
+		"2000000000000000000":   {2000000000000000000, 0},
 	}
 
 	for name, tt := range tests {
@@ -257,7 +242,7 @@ func BenchmarkDecimal_Sqrt(b *testing.B) {
 			b.Run("mod=govalues", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					x := gv.MustNew(tt.coef, int(tt.scale))
-					resultGV, resultError = x.Sqrt() // implicitly calculates 38 digits and rounds to 19 digits
+					resultGV, resultError = x.Sqrt()
 				}
 			})
 
@@ -272,7 +257,6 @@ func BenchmarkDecimal_Sqrt(b *testing.B) {
 			})
 
 			b.Run("mod=shopspring", func(b *testing.B) {
-				ss.DivisionPrecision = 19
 				for i := 0; i < b.N; i++ {
 					x := ss.New(tt.coef, -tt.scale)
 					y := ss.New(5, -1)
@@ -288,7 +272,6 @@ func BenchmarkParse(b *testing.B) {
 		"1",
 		"12345.12345",
 		"123456789.1234567890",
-		"1234567890123456789.12345678901234567890",
 	}
 	for _, s := range tests {
 		b.Run(s, func(b *testing.B) {

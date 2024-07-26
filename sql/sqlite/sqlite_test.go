@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/govalues/decimal"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 const (
@@ -22,7 +22,7 @@ var db *sql.DB
 
 func TestMain(m *testing.M) {
 	var err error
-	db, err = sql.Open("sqlite3", url)
+	db, err = sql.Open("sqlite", url)
 	if err != nil {
 		log.Fatalf("Open(%q) failed: %v\n", url, err)
 	}

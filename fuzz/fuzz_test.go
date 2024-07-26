@@ -228,6 +228,48 @@ func FuzzDecimal_Quo(f *testing.F) {
 	})
 }
 
+func FuzzDecimal_QuoRem(f *testing.F) {
+	ss.DivisionPrecision = 100
+	ss.PowPrecisionNegativeExponent = 100
+	cd.BaseContext.Precision = 100
+	cd.BaseContext.Rounding = cd.RoundHalfEven
+
+	for _, d := range corpus {
+		for _, e := range corpus {
+			f.Add(d.coef, d.scale, e.coef, e.scale)
+		}
+	}
+
+	f.Fuzz(func(t *testing.T, dcoef int64, dscale int, ecoef int64, escale int) {
+		// GoValues
+		gotQGV, gotRGV, ok := quoRemGV(dcoef, dscale, ecoef, escale)
+		if !ok {
+			t.Skip()
+			return
+		}
+		// Cockroach DB
+		wantQCD, wantRCD, err := quoRemCD(dcoef, dscale, ecoef, escale)
+		if err != nil {
+			t.Errorf("quoRemCD(%v, %v, %v, %v) failed: %v", dcoef, dscale, ecoef, escale, err)
+			return
+		}
+		if gotQGV != wantQCD || gotRGV != wantRCD {
+			t.Errorf("quoRemGV(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotQGV, wantQCD)
+			return
+		}
+		// ShopSpring
+		wantQSS, wantRSS, err := quoRemSS(dcoef, dscale, ecoef, escale)
+		if err != nil {
+			t.Errorf("quoRemSS(%v, %v, %v, %v) failed: %v", dcoef, dscale, ecoef, escale, err)
+			return
+		}
+		if gotQGV != wantQSS || gotRGV != wantRSS {
+			t.Errorf("quoRemGV(%v, %v, %v, %v) = %v, want %v", dcoef, dscale, ecoef, escale, gotQGV, wantQSS)
+			return
+		}
+	})
+}
+
 func FuzzDecimal_Pow(f *testing.F) {
 	ss.DivisionPrecision = 100
 	ss.PowPrecisionNegativeExponent = 100
@@ -241,10 +283,6 @@ func FuzzDecimal_Pow(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, dcoef int64, dscale int, power int) {
-		if dcoef == 0 {
-			t.Skip()
-			return
-		}
 		// GoValues
 		gotGV, ok := powGV(dcoef, dscale, power)
 		if !ok {
@@ -265,6 +303,10 @@ func FuzzDecimal_Pow(f *testing.F) {
 			return
 		}
 		// ShopSpring
+		if dcoef == 0 {
+			t.Skip()
+			return
+		}
 		wantSS, err := powSS(dcoef, dscale, power)
 		if err != nil {
 			t.Errorf("powSS(%v, %v, %v) failed: %v", dcoef, dscale, power, err)
@@ -381,6 +423,61 @@ func quoCD(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
 		return "", err
 	}
 	return roundCD(f)
+}
+
+func quoRemGV(dcoef int64, dscale int, ecoef int64, escale int) (string, string, bool) {
+	d, err := gv.New(dcoef, dscale)
+	if err != nil {
+		return "", "", false
+	}
+	e, err := gv.New(ecoef, escale)
+	if err != nil {
+		return "", "", false
+	}
+	q, r, err := d.QuoRem(e)
+	if err != nil {
+		return "", "", false
+	}
+	return q.Trim(0).String(), r.Trim(0).String(), true
+}
+
+func quoRemSS(dcoef int64, dscale int, ecoef int64, escale int) (string, string, error) {
+	d := ss.New(dcoef, int32(-dscale))
+	e := ss.New(ecoef, int32(-escale))
+	q, r := d.QuoRem(e, 0)
+	qs, err := roundSS(q)
+	if err != nil {
+		return "", "", err
+	}
+	rs, err := roundSS(r)
+	if err != nil {
+		return "", "", err
+	}
+	return qs, rs, nil
+}
+
+func quoRemCD(dcoef int64, dscale int, ecoef int64, escale int) (string, string, error) {
+	d := cd.New(dcoef, int32(-dscale))
+	e := cd.New(ecoef, int32(-escale))
+	q := cd.New(0, 0)
+	r := cd.New(0, 0)
+	_, err := cd.BaseContext.QuoInteger(q, d, e)
+	if err != nil {
+		return "", "", err
+	}
+	_, err = cd.BaseContext.Rem(r, d, e)
+	if err != nil {
+		return "", "", err
+	}
+	qs, err := roundCD(q)
+	if err != nil {
+		return "", "", err
+	}
+	rs, err := roundCD(r)
+	if err != nil {
+		return "", "", err
+	}
+	return qs, rs, nil
 }
 
 func mulSS(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
