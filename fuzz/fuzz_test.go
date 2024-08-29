@@ -530,6 +530,7 @@ func quoGV(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
 	return f.Trim(0).String(), true
 }
 
+//nolint:gosec
 func divSS(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
 	d := ss.New(dcoef, int32(-dscale))
 	e := ss.New(ecoef, int32(-escale))
@@ -537,6 +538,7 @@ func divSS(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
 	return roundSS(f)
 }
 
+//nolint:gosec
 func quoCD(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
 	d := cd.New(dcoef, int32(-dscale))
 	e := cd.New(ecoef, int32(-escale))
@@ -564,6 +566,7 @@ func quoRemGV(dcoef int64, dscale int, ecoef int64, escale int) (string, string,
 	return q.Trim(0).String(), r.Trim(0).String(), true
 }
 
+//nolint:gosec
 func quoRemSS(dcoef int64, dscale int, ecoef int64, escale int) (string, string, error) {
 	d := ss.New(dcoef, int32(-dscale))
 	e := ss.New(ecoef, int32(-escale))
@@ -579,6 +582,7 @@ func quoRemSS(dcoef int64, dscale int, ecoef int64, escale int) (string, string,
 	return qs, rs, nil
 }
 
+//nolint:gosec
 func quoRemCD(dcoef int64, dscale int, ecoef int64, escale int) (string, string, error) {
 	d := cd.New(dcoef, int32(-dscale))
 	e := cd.New(ecoef, int32(-escale))
@@ -603,6 +607,7 @@ func quoRemCD(dcoef int64, dscale int, ecoef int64, escale int) (string, string,
 	return qs, rs, nil
 }
 
+//nolint:gosec
 func mulSS(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
 	d := ss.New(dcoef, int32(-dscale))
 	e := ss.New(ecoef, int32(-escale))
@@ -610,6 +615,7 @@ func mulSS(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
 	return roundSS(f)
 }
 
+//nolint:gosec
 func mulCD(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
 	d := cd.New(dcoef, int32(-dscale))
 	e := cd.New(ecoef, int32(-escale))
@@ -637,6 +643,7 @@ func mulGV(dcoef int64, dscale int, ecoef int64, escale int) (string, bool) {
 	return f.Trim(0).String(), true
 }
 
+//nolint:gosec
 func addSS(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
 	d := ss.New(dcoef, int32(-dscale))
 	e := ss.New(ecoef, int32(-escale))
@@ -644,6 +651,7 @@ func addSS(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
 	return roundSS(f)
 }
 
+//nolint:gosec
 func addCD(dcoef int64, dscale int, ecoef int64, escale int) (string, error) {
 	d := cd.New(dcoef, int32(-dscale))
 	e := cd.New(ecoef, int32(-escale))
@@ -691,6 +699,7 @@ func addMulGV(dcoef int64, dscale int, ecoef int64, escale int, fcoef int64, fsc
 	return g.Trim(0).String(), true
 }
 
+//nolint:gosec
 func addMulCD(dcoef int64, dscale int, ecoef int64, escale int, fcoef int64, fscale int) (string, error) {
 	d := cd.New(dcoef, int32(-dscale))
 	e := cd.New(ecoef, int32(-escale))
@@ -707,6 +716,7 @@ func addMulCD(dcoef int64, dscale int, ecoef int64, escale int, fcoef int64, fsc
 	return roundCD(g)
 }
 
+//nolint:gosec
 func addMulSS(dcoef int64, dscale int, ecoef int64, escale int, fcoef int64, fscale int) (string, error) {
 	d := ss.New(dcoef, int32(-dscale))
 	e := ss.New(ecoef, int32(-escale))
@@ -735,6 +745,7 @@ func addQuoGV(dcoef int64, dscale int, ecoef int64, escale int, fcoef int64, fsc
 	return g.Trim(0).String(), true
 }
 
+//nolint:gosec
 func addQuoCD(dcoef int64, dscale int, ecoef int64, escale int, fcoef int64, fscale int) (string, error) {
 	d := cd.New(dcoef, int32(-dscale))
 	e := cd.New(ecoef, int32(-escale))
@@ -751,6 +762,7 @@ func addQuoCD(dcoef int64, dscale int, ecoef int64, escale int, fcoef int64, fsc
 	return roundCD(g)
 }
 
+//nolint:gosec
 func addQuoSS(dcoef int64, dscale int, ecoef int64, escale int, fcoef int64, fscale int) (string, error) {
 	d := ss.New(dcoef, int32(-dscale))
 	e := ss.New(ecoef, int32(-escale))
@@ -771,6 +783,7 @@ func powGV(dcoef int64, dscale int, power int) (string, bool) {
 	return f.Trim(0).String(), true
 }
 
+//nolint:gosec
 func powCD(dcoef int64, dscale int, power int) (string, error) {
 	if dcoef == 0 && power == 0 {
 		return "1", nil
@@ -785,6 +798,7 @@ func powCD(dcoef int64, dscale int, power int) (string, error) {
 	return roundCD(f)
 }
 
+//nolint:gosec
 func powSS(dcoef int64, dscale int, power int) (string, error) {
 	d := ss.New(dcoef, int32(-dscale))
 	e, err := d.PowInt32(int32(power))
@@ -815,6 +829,7 @@ func cmpULP(s, t string) (int, error) {
 	return d.Cmp(e), nil
 }
 
+//nolint:gosec
 func roundSS(d ss.Decimal) (string, error) {
 	// Check if number fits uint64 coefficient
 	prec := int32(d.NumDigits())
