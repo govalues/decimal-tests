@@ -26,7 +26,7 @@ jobs:
       run: go get -u -t ./... && go mod tidy && git diff --exit-code
 
     - name: Verify potential issues
-      uses: golangci/golangci-lint-action@v4
+      uses: golangci/golangci-lint-action@v6
 
     - name: Run fuzz tests
       run: task fuzz

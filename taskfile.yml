@@ -12,11 +12,13 @@ tasks:
       - for:
           - FuzzDecimal_Add
           - FuzzDecimal_Mul
-          - FuzzDecimal_FMA
+          - FuzzDecimal_AddMul
+          - FuzzDecimal_AddQuo
           - FuzzDecimal_Quo
           - FuzzDecimal_QuoRem
           - FuzzDecimal_Pow
           - FuzzDecimal_Sqrt
+          - FuzzDecimal_Exp
         cmd: go test -fuzztime 60s -fuzz ^{{.ITEM}}$
 
   sql:
