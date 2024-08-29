@@ -459,6 +459,7 @@ func expGV(dcoef int64, dscale int) (string, bool) {
 	return f.Trim(0).String(), true
 }
 
+//nolint:gosec
 func expCD(dcoef int64, dscale int) (string, error) {
 	d := cd.New(dcoef, int32(-dscale))
 	f := cd.New(0, 0)
@@ -469,6 +470,7 @@ func expCD(dcoef int64, dscale int) (string, error) {
 	return roundCD(f)
 }
 
+//nolint:gosec
 func expSS(dcoef int64, dscale int) (string, error) {
 	d := ss.New(dcoef, int32(-dscale))
 	e, err := d.ExpTaylor(100)
@@ -490,6 +492,7 @@ func sqrtGV(dcoef int64, dscale int) (string, bool) {
 	return f.Trim(0).String(), true
 }
 
+//nolint:gosec
 func sqrtCD(dcoef int64, dscale int) (string, error) {
 	d := cd.New(dcoef, int32(-dscale))
 	f := cd.New(0, 0)
@@ -500,6 +503,7 @@ func sqrtCD(dcoef int64, dscale int) (string, error) {
 	return roundCD(f)
 }
 
+//nolint:gosec
 func sqrtSS(dcoef int64, dscale int) (string, error) {
 	d := ss.New(dcoef, int32(-dscale))
 	e := ss.New(5, -1)
@@ -836,6 +840,7 @@ func roundSS(d ss.Decimal) (string, error) {
 	return d.String(), nil
 }
 
+//nolint:gosec
 func roundCD(d *cd.Decimal) (string, error) {
 	// Trailing Zeros
 	d.Reduce(d)

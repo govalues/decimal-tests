@@ -185,6 +185,7 @@ func BenchmarkDecimal_QuoInfinite(b *testing.B) {
 	}
 }
 
+//nolint:gosec
 func BenchmarkDecimal_Pow(b *testing.B) {
 	tests := map[string]struct {
 		coef  int64
@@ -597,6 +598,7 @@ func BenchmarkDecimal_Telco(b *testing.B) {
 	})
 }
 
+//nolint:gosec
 func readTelcoTests() ([]int64, error) {
 	file, err := os.Open("expon180.1e6b")
 	if err != nil {
