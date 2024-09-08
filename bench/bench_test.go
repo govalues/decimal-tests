@@ -101,7 +101,7 @@ func BenchmarkDecimal_Mul(b *testing.B) {
 	}
 }
 
-func BenchmarkDecimal_QuoExact(b *testing.B) {
+func BenchmarkDecimal_Quo(b *testing.B) {
 	tests := map[string]struct {
 		xcoef  int64
 		xscale int32
@@ -109,47 +109,6 @@ func BenchmarkDecimal_QuoExact(b *testing.B) {
 		yscale int32
 	}{
 		"2÷4": {2, 0, 4, 0},
-	}
-	for name, tt := range tests {
-		b.Run(name, func(b *testing.B) {
-			b.Run("mod=govalues", func(b *testing.B) {
-				for range b.N {
-					x := gv.MustNew(tt.xcoef, int(tt.xscale))
-					y := gv.MustNew(tt.ycoef, int(tt.yscale))
-					resultGV, resultError = x.Quo(y)
-				}
-			})
-
-			b.Run("mod=cockroachdb", func(b *testing.B) {
-				cd.BaseContext.Precision = 19
-				cd.BaseContext.Rounding = cd.RoundHalfEven
-				for range b.N {
-					x := cd.New(tt.xcoef, -tt.xscale)
-					y := cd.New(tt.ycoef, -tt.yscale)
-					z := cd.New(0, 0)
-					_, resultError = cd.BaseContext.Quo(z, x, y)
-				}
-			})
-
-			b.Run("mod=shopspring", func(b *testing.B) {
-				ss.DivisionPrecision = 19
-				for range b.N {
-					x := ss.New(tt.xcoef, -tt.xscale)
-					y := ss.New(tt.ycoef, -tt.yscale)
-					resultSS = x.Div(y)
-				}
-			})
-		})
-	}
-}
-
-func BenchmarkDecimal_QuoInfinite(b *testing.B) {
-	tests := map[string]struct {
-		xcoef  int64
-		xscale int32
-		ycoef  int64
-		yscale int32
-	}{
 		"2÷3": {2, 0, 3, 0},
 	}
 	for name, tt := range tests {
