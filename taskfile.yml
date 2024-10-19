@@ -16,9 +16,10 @@ tasks:
           - FuzzDecimal_AddQuo
           - FuzzDecimal_Quo
           - FuzzDecimal_QuoRem
-          - FuzzDecimal_Pow
+          - FuzzDecimal_PowInt
           - FuzzDecimal_Sqrt
           - FuzzDecimal_Exp
+          - FuzzDecimal_Log
         cmd: go test -fuzztime 60s -fuzz ^{{.ITEM}}$
 
   sql:

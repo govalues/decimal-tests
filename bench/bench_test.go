@@ -145,7 +145,7 @@ func BenchmarkDecimal_Quo(b *testing.B) {
 }
 
 //nolint:gosec
-func BenchmarkDecimal_Pow(b *testing.B) {
+func BenchmarkDecimal_PowInt(b *testing.B) {
 	tests := map[string]struct {
 		coef  int64
 		scale int32
@@ -161,7 +161,7 @@ func BenchmarkDecimal_Pow(b *testing.B) {
 			b.Run("mod=govalues", func(b *testing.B) {
 				for range b.N {
 					x := gv.MustNew(tt.coef, int(tt.scale))
-					resultGV, resultError = x.Pow(int(tt.power))
+					resultGV, resultError = x.PowInt(int(tt.power))
 				}
 			})
 
@@ -261,6 +261,46 @@ func BenchmarkDecimal_Exp(b *testing.B) {
 				for range b.N {
 					x := ss.New(tt.coef, -tt.scale)
 					resultSS, resultError = x.ExpTaylor(19)
+				}
+			})
+		})
+	}
+}
+
+func BenchmarkDecimal_Log(b *testing.B) {
+	tests := map[string]struct {
+		coef  int64
+		scale int32
+	}{
+		"0.000005": {5, 6},
+		"0.5":      {5, 1},
+		"500":      {500, 0},
+		"500000":   {500_000, 0},
+	}
+
+	for name, tt := range tests {
+		b.Run(name, func(b *testing.B) {
+			b.Run("mod=govalues", func(b *testing.B) {
+				for range b.N {
+					x := gv.MustNew(tt.coef, int(tt.scale))
+					resultGV, resultError = x.Log()
+				}
+			})
+
+			b.Run("mod=cockroachdb", func(b *testing.B) {
+				cd.BaseContext.Precision = 19
+				cd.BaseContext.Rounding = cd.RoundHalfEven
+				for range b.N {
+					x := cd.New(tt.coef, -tt.scale)
+					z := cd.New(0, 0)
+					_, resultError = cd.BaseContext.Ln(z, x)
+				}
+			})
+
+			b.Run("mod=shopspring", func(b *testing.B) {
+				for range b.N {
+					x := ss.New(tt.coef, -tt.scale)
+					resultSS, resultError = x.Ln(19)
 				}
 			})
 		})

@@ -314,7 +314,7 @@ func FuzzDecimal_QuoRem(f *testing.F) {
 	})
 }
 
-func FuzzDecimal_Pow(f *testing.F) {
+func FuzzDecimal_PowInt(f *testing.F) {
 	ss.DivisionPrecision = 100
 	ss.PowPrecisionNegativeExponent = 100
 	cd.BaseContext.Precision = 100
@@ -328,22 +328,19 @@ func FuzzDecimal_Pow(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, dcoef int64, dscale int, power int) {
 		// GoValues
-		gotGV, ok := powGV(dcoef, dscale, power)
+		gotGV, ok := powIntGV(dcoef, dscale, power)
 		if !ok {
 			t.Skip()
 			return
 		}
 		// Cockroach Db
-		wantCD, err := powCD(dcoef, dscale, power)
+		wantCD, err := powIntCD(dcoef, dscale, power)
 		if err != nil {
-			t.Errorf("powCD(%v, %v, %v) failed: %v", dcoef, dscale, power, err)
+			t.Errorf("powIntCD(%v, %v, %v) failed: %v", dcoef, dscale, power, err)
 			return
 		}
-		if c, err := cmpULP(gotGV, wantCD); err != nil {
-			t.Errorf("cmpULP(%v, %v) failed: %v", gotGV, wantCD, err)
-			return
-		} else if c != 0 {
-			t.Errorf("powGV(%v, %v, %v) = %v, want %v", dcoef, dscale, power, gotGV, wantCD)
+		if gotGV != wantCD {
+			t.Errorf("powIntGV(%v, %v, %v) = %v, want %v", dcoef, dscale, power, gotGV, wantCD)
 			return
 		}
 		// ShopSpring
@@ -351,15 +348,13 @@ func FuzzDecimal_Pow(f *testing.F) {
 			t.Skip()
 			return
 		}
-		wantSS, err := powSS(dcoef, dscale, power)
+		wantSS, err := powIntSS(dcoef, dscale, power)
 		if err != nil {
-			t.Errorf("powSS(%v, %v, %v) failed: %v", dcoef, dscale, power, err)
+			t.Errorf("powIntSS(%v, %v, %v) failed: %v", dcoef, dscale, power, err)
 			return
 		}
-		if c, err := cmpULP(gotGV, wantSS); err != nil {
-			t.Errorf("cmpULP(%v, %v) failed: %v", gotGV, wantSS, err)
-		} else if c != 0 {
-			t.Errorf("powGV(%v, %v, %v) = %v, want %v", dcoef, dscale, power, gotGV, wantSS)
+		if gotGV != wantSS {
+			t.Errorf("powIntGV(%v, %v, %v) = %v, want %v", dcoef, dscale, power, gotGV, wantSS)
 		}
 	})
 }
@@ -445,6 +440,74 @@ func FuzzDecimal_Exp(f *testing.F) {
 			t.Errorf("expGV(%v, %v) = %v, want %v", dcoef, dscale, gotGV, wantSS)
 		}
 	})
+}
+
+func FuzzDecimal_Log(f *testing.F) {
+	ss.DivisionPrecision = 100
+	ss.PowPrecisionNegativeExponent = 100
+	cd.BaseContext.Precision = 100
+	cd.BaseContext.Rounding = cd.RoundHalfEven
+
+	f.Fuzz(func(t *testing.T, dcoef int64, dscale int) {
+		// GoValues
+		gotGV, ok := logGV(dcoef, dscale)
+		if !ok {
+			t.Skip()
+			return
+		}
+		// Cockroach DB
+		wantCD, err := lnCD(dcoef, dscale)
+		if err != nil {
+			t.Errorf("lnCD(%v, %v) failed: %v", dcoef, dscale, err)
+			return
+		}
+		if gotGV != wantCD {
+			t.Errorf("logGV(%v, %v) = %v, want %v", dcoef, dscale, gotGV, wantCD)
+			return
+		}
+		// ShopSpring
+		wantSS, err := lnSS(dcoef, dscale)
+		if err != nil {
+			t.Errorf("lnSS(%v, %v) failed: %v", dcoef, dscale, err)
+			return
+		}
+		if gotGV != wantSS {
+			t.Errorf("logGV(%v, %v) = %v, want %v", dcoef, dscale, gotGV, wantSS)
+		}
+	})
+}
+
+func logGV(dcoef int64, dscale int) (string, bool) {
+	d, err := gv.New(dcoef, dscale)
+	if err != nil {
+		return "", false
+	}
+	f, err := d.Log()
+	if err != nil {
+		return "", false
+	}
+	return f.Trim(0).String(), true
+}
+
+//nolint:gosec
+func lnCD(dcoef int64, dscale int) (string, error) {
+	d := cd.New(dcoef, int32(-dscale))
+	f := cd.New(0, 0)
+	_, err := cd.BaseContext.Ln(f, d)
+	if err != nil {
+		return "", err
+	}
+	return roundCD(f)
+}
+
+//nolint:gosec
+func lnSS(dcoef int64, dscale int) (string, error) {
+	d := ss.New(dcoef, int32(-dscale))
+	e, err := d.Ln(100)
+	if err != nil {
+		return "", err
+	}
+	return roundSS(e)
 }
 
 func expGV(dcoef int64, dscale int) (string, bool) {
@@ -771,12 +834,12 @@ func addQuoSS(dcoef int64, dscale int, ecoef int64, escale int, fcoef int64, fsc
 	return roundSS(g)
 }
 
-func powGV(dcoef int64, dscale int, power int) (string, bool) {
+func powIntGV(dcoef int64, dscale int, power int) (string, bool) {
 	d, err := gv.New(dcoef, dscale)
 	if err != nil {
 		return "", false
 	}
-	f, err := d.Pow(power)
+	f, err := d.PowInt(power)
 	if err != nil {
 		return "", false
 	}
@@ -784,7 +847,7 @@ func powGV(dcoef int64, dscale int, power int) (string, bool) {
 }
 
 //nolint:gosec
-func powCD(dcoef int64, dscale int, power int) (string, error) {
+func powIntCD(dcoef int64, dscale int, power int) (string, error) {
 	if dcoef == 0 && power == 0 {
 		return "1", nil
 	}
@@ -799,34 +862,13 @@ func powCD(dcoef int64, dscale int, power int) (string, error) {
 }
 
 //nolint:gosec
-func powSS(dcoef int64, dscale int, power int) (string, error) {
+func powIntSS(dcoef int64, dscale int, power int) (string, error) {
 	d := ss.New(dcoef, int32(-dscale))
 	e, err := d.PowInt32(int32(power))
 	if err != nil {
 		return "", err
 	}
 	return roundSS(e)
-}
-
-// cmpULP compares decimals and returns 0 if they are within 1 ULP.
-func cmpULP(s, t string) (int, error) {
-	d, err := gv.Parse(s)
-	if err != nil {
-		return 0, err
-	}
-	e, err := gv.Parse(t)
-	if err != nil {
-		return 0, err
-	}
-	dist, err := d.SubAbs(e)
-	if err != nil {
-		return 0, err
-	}
-	ulp := d.ULP().Min(e.ULP())
-	if dist.Cmp(ulp) <= 0 {
-		return 0, nil
-	}
-	return d.Cmp(e), nil
 }
 
 //nolint:gosec
