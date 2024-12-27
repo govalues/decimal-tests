@@ -144,7 +144,50 @@ func BenchmarkDecimal_Quo(b *testing.B) {
 	}
 }
 
-//nolint:gosec
+func BenchmarkDecimal_Pow(b *testing.B) {
+	tests := map[string]struct {
+		xcoef  int64
+		xscale int32
+		ycoef  int64
+		yscale int32
+	}{
+		"10.1^1.5":       {101, 1, 15, 1},
+		"10000.1^1.5":    {100001, 1, 15, 1},
+		"10000000.1^1.5": {1000000001, 1, 15, 1},
+	}
+
+	for name, tt := range tests {
+		b.Run(name, func(b *testing.B) {
+			b.Run("mod=govalues", func(b *testing.B) {
+				for range b.N {
+					x := gv.MustNew(tt.xcoef, int(tt.xscale))
+					y := gv.MustNew(tt.ycoef, int(tt.yscale))
+					resultGV, resultError = x.Pow(y)
+				}
+			})
+
+			b.Run("mod=cockroachdb", func(b *testing.B) {
+				cd.BaseContext.Precision = 19
+				cd.BaseContext.Rounding = cd.RoundHalfEven
+				for range b.N {
+					x := cd.New(tt.xcoef, -tt.xscale)
+					y := cd.New(tt.ycoef, -tt.yscale)
+					z := cd.New(0, 0)
+					_, resultError = cd.BaseContext.Pow(z, x, y)
+				}
+			})
+
+			b.Run("mod=shopspring", func(b *testing.B) {
+				for range b.N {
+					x := ss.New(tt.xcoef, -tt.xscale)
+					y := ss.New(tt.ycoef, -tt.yscale)
+					resultSS, resultError = x.PowWithPrecision(y, 19)
+				}
+			})
+		})
+	}
+}
+
 func BenchmarkDecimal_PowInt(b *testing.B) {
 	tests := map[string]struct {
 		coef  int64
@@ -213,14 +256,6 @@ func BenchmarkDecimal_Sqrt(b *testing.B) {
 					x := cd.New(tt.coef, -tt.scale)
 					z := cd.New(0, 0)
 					_, resultError = cd.BaseContext.Sqrt(z, x)
-				}
-			})
-
-			b.Run("mod=shopspring", func(b *testing.B) {
-				for range b.N {
-					x := ss.New(tt.coef, -tt.scale)
-					y := ss.New(5, -1)
-					resultSS, resultError = x.PowWithPrecision(y, 19)
 				}
 			})
 		})
@@ -301,6 +336,38 @@ func BenchmarkDecimal_Log(b *testing.B) {
 				for range b.N {
 					x := ss.New(tt.coef, -tt.scale)
 					resultSS, resultError = x.Ln(19)
+				}
+			})
+		})
+	}
+}
+
+func BenchmarkDecimal_Log10(b *testing.B) {
+	tests := map[string]struct {
+		coef  int64
+		scale int32
+	}{
+		"0.000005": {5, 6},
+		"0.5":      {5, 1},
+		"500":      {500, 0},
+		"500000":   {500_000, 0},
+	}
+	for name, tt := range tests {
+		b.Run(name, func(b *testing.B) {
+			b.Run("mod=govalues", func(b *testing.B) {
+				for range b.N {
+					x := gv.MustNew(tt.coef, int(tt.scale))
+					resultGV, resultError = x.Log10()
+				}
+			})
+
+			b.Run("mod=cockroachdb", func(b *testing.B) {
+				cd.BaseContext.Precision = 19
+				cd.BaseContext.Rounding = cd.RoundHalfEven
+				for range b.N {
+					x := cd.New(tt.coef, -tt.scale)
+					z := cd.New(0, 0)
+					_, resultError = cd.BaseContext.Log10(z, x)
 				}
 			})
 		})
@@ -597,7 +664,6 @@ func BenchmarkDecimal_Telco(b *testing.B) {
 	})
 }
 
-//nolint:gosec
 func readTelcoTests() ([]int64, error) {
 	file, err := os.Open("expon180.1e6b")
 	if err != nil {

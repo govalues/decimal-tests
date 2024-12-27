@@ -10,6 +10,9 @@ tasks:
     dir: fuzz
     cmds:
       - for:
+          - FuzzSum
+          - FuzzProd
+          - FuzzMean
           - FuzzDecimal_Add
           - FuzzDecimal_Mul
           - FuzzDecimal_AddMul
@@ -20,6 +23,9 @@ tasks:
           - FuzzDecimal_Sqrt
           - FuzzDecimal_Exp
           - FuzzDecimal_Log
+          - FuzzDecimal_Log2
+          - FuzzDecimal_Log10
+          - FuzzDecimal_Pow
         cmd: go test -fuzztime 60s -fuzz ^{{.ITEM}}$
 
   sql:
