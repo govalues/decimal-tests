@@ -27,16 +27,26 @@ services:
       interval: 5s
       timeout: 5s
       retries: 8
-  # mongo:
-  #   image: mongo
+  mongo:
+    image: mongo
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+    healthcheck:
+      test: mongosh admin -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD --quiet --eval 'db.runCommand({serverStatus:1}).ok' | grep 1
+      start_interval: 20s
+      interval: 5s
+      timeout: 5s
+      retries: 8
+  # mongo-express:
+  #   image: mongo-express
   #   ports:
-  #     - 27017:27017
+  #     - 8081:8081
   #   environment:
-  #     MONGO_INITDB_ROOT_USERNAME: root
-  #     MONGO_INITDB_ROOT_PASSWORD: password
-  #   healthcheck:
-  #     test: mongosh admin -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD --quiet --eval 'db.runCommand({serverStatus:1}).ok' | grep 1
-  #     start_interval: 20s
-  #     interval: 5s
-  #     timeout: 5s
-  #     retries: 8
+  #     ME_CONFIG_MONGODB_URL: mongodb://root:password@mongo:27017/
+  #     ME_CONFIG_BASICAUTH_ENABLED: "false"
+  #   depends_on:
+  #     mongo:
+  #       condition: service_healthy

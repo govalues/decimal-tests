@@ -3,7 +3,7 @@ tasks:
   test:
     cmds:
       - task: fuzz
-      - task: sql
+      - task: db
 
   fuzz:
     desc: Run fuzz tests
@@ -28,9 +28,9 @@ tasks:
           - FuzzDecimal_Pow
         cmd: go test -fuzztime 60s -fuzz ^{{.ITEM}}$
 
-  sql:
-    desc: Run SQL tests
-    dir: sql
+  db:
+    desc: Run database tests
+    dir: db
     cmds:
       - docker compose up --detach --wait
       - defer: docker compose down
