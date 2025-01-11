@@ -27,7 +27,9 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("Connect(%q) failed: %v\n", uri, err)
 	}
-	defer client.Disconnect(ctx)
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 
 	err = client.Ping(ctx, nil)
 	if err != nil {
